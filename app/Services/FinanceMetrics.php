@@ -62,6 +62,18 @@ class FinanceMetrics
             ->sum(DB::raw('order_items.qty * COALESCE(order_items.unit_cost, 0)'));
     }
 
+    /** Jumlah kitab terjual yang modalnya belum final (belum dibeli / belum masuk jadwal bagasi). */
+    public function unfinalItems(CarbonImmutable $from, CarbonImmutable $to): int
+    {
+        return (int) DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereNull('orders.deleted_at')
+            ->where('orders.status', '!=', 'dibatalkan')
+            ->whereBetween('orders.created_at', [$from, $to])
+            ->whereNull('order_items.unit_cost')
+            ->sum('order_items.qty');
+    }
+
     public function expenses(CarbonImmutable $from, CarbonImmutable $to): int
     {
         return (int) DB::table('expenses')

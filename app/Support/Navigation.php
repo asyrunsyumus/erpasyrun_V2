@@ -36,6 +36,7 @@ class Navigation
             'expenses' => ['group' => 'Keuangan', 'label' => 'Biaya', 'icon' => 'money', 'path' => '/expenses', 'roles' => [Role::Owner]],
 
             'users' => ['group' => 'Pengaturan', 'label' => 'Pengguna', 'icon' => 'shield', 'path' => '/users', 'roles' => [Role::Owner]],
+            'shop' => ['group' => 'Pengaturan', 'label' => 'Toko & Invoice', 'icon' => 'store', 'path' => '/shop-settings', 'roles' => [Role::Owner]],
             'audit' => ['group' => 'Pengaturan', 'label' => 'Log Aktivitas', 'icon' => 'history', 'path' => '/audit', 'roles' => [Role::Owner]],
         ];
     }

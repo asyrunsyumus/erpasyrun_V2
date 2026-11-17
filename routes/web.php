@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BaggageController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ShopSettingsController;
 use App\Http\Controllers\CancellationController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\NotificationController;
@@ -130,6 +134,19 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('throttle:10,1')->name('users.destroy');
     });
 
+    // ---------- Laporan, Biaya, Log, Pengaturan toko: hanya Owner ----------
+    Route::middleware('role:owner')->group(function () {
+        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+        Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::put('expenses/{expense}', [ExpenseController::class, 'update'])->whereNumber('expense')->name('expenses.update');
+        Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->whereNumber('expense')->name('expenses.destroy');
+        Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
+        Route::get('shop-settings', [ShopSettingsController::class, 'edit'])->name('shop.index');
+        Route::put('shop-settings', [ShopSettingsController::class, 'update'])->name('shop.update');
+    });
+
     // ---------- Notifikasi (setiap orang miliknya sendiri) ----------
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('notifications/{id}/open', [NotificationController::class, 'open'])->name('notifications.open');
@@ -139,7 +156,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
 
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'stock', 'cancellations', 'users'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'stock', 'cancellations', 'users', 'reports', 'expenses', 'audit', 'shop'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;
