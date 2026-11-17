@@ -3,6 +3,8 @@ import { kg, rupiahShort } from '@/lib/format';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
+import { useMemo } from 'react';
+import { BarChart, CountUp } from '@/components/motion';
 
 interface Task {
     count: number;
@@ -62,34 +64,8 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 function SalesChart({ series }: { series: NonNullable<Props['series']> }) {
-    const max = Math.max(1, ...series.map((s) => s.sales));
-    const H = 170;
-    return (
-        <div className="num">
-            <div className="flex h-[190px] items-end gap-3 sm:gap-6">
-                {series.map((s, i) => {
-                    const last = i === series.length - 1;
-                    const sh = (s.sales / max) * H;
-                    const ph = Math.max(0, (s.profit / max) * H);
-                    return (
-                        <div key={s.label} className="flex flex-1 flex-col items-center justify-end gap-1">
-                            {last && s.sales > 0 && <span className="text-xs font-semibold">{rupiahShort(s.sales).replace('Rp ', '')}</span>}
-                            <div className="relative w-full max-w-[52px] rounded-md bg-[#c9d9e0] dark:bg-[#2a434c]" style={{ height: Math.max(sh, 2) }} title={`Penjualan ${rupiahShort(s.sales)}`}>
-                                <div className="bg-brand absolute inset-x-0 bottom-0 rounded-md" style={{ height: ph }} title={`Untung ${rupiahShort(s.profit)}`} />
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="mt-2 flex gap-3 sm:gap-6">
-                {series.map((s, i) => (
-                    <span key={s.label} className={'flex-1 text-center text-xs ' + (i === series.length - 1 ? 'text-ink font-semibold' : 'text-ink-2')}>
-                        {s.label}
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
+    const data = useMemo(() => series.map((s) => ({ label: s.label, value: s.sales, overlay: s.profit })), [series]);
+    return <BarChart data={data} periodKey="6-bulan" format={rupiahShort} overlayLabel="untung" height={170} />;
 }
 
 export default function Dashboard(props: Props) {
@@ -149,7 +125,7 @@ export default function Dashboard(props: Props) {
                     <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <div className="bg-brand rounded-[14px] px-5 py-[18px] text-white">
                             <div className="text-sm text-[#cbe1ea]">Penjualan</div>
-                            <div className="font-display num my-1.5 text-[27px] font-semibold">{rupiahShort(props.kpis.sales.value)}</div>
+                            <div className="font-display num my-1.5 text-[27px] font-semibold"><CountUp value={props.kpis.sales.value} format={rupiahShort} /></div>
                             <div className="text-[13.5px] text-[#cbe1ea]">
                                 {props.kpis.sales.change != null && <span className="font-semibold text-[#9fe0bb]">{props.kpis.sales.change >= 0 ? '▲' : '▼'} {Math.abs(props.kpis.sales.change)}% · </span>}
                                 {props.kpis.sales.orders} pesanan
@@ -157,21 +133,21 @@ export default function Dashboard(props: Props) {
                         </div>
                         <div className="card !py-[18px]">
                             <div className="text-ink-2 text-sm">Uang masuk</div>
-                            <div className="font-display num my-1.5 text-[27px] font-semibold">{rupiahShort(props.kpis.cash.value)}</div>
+                            <div className="font-display num my-1.5 text-[27px] font-semibold"><CountUp value={props.kpis.cash.value} format={rupiahShort} /></div>
                             <div className="text-ink-3 text-[13.5px]">
                                 <Change value={props.kpis.cash.change} /> · dari invoice lunas
                             </div>
                         </div>
                         <div className="card !py-[18px]">
                             <div className="text-ink-2 text-sm">Untung bersih</div>
-                            <div className={'font-display num my-1.5 text-[27px] font-semibold ' + (props.kpis.profit.value < 0 ? 'text-bad' : '')}>{rupiahShort(props.kpis.profit.value)}</div>
+                            <div className={'font-display num my-1.5 text-[27px] font-semibold ' + (props.kpis.profit.value < 0 ? 'text-bad' : '')}><CountUp value={props.kpis.profit.value} format={rupiahShort} /></div>
                             <div className="text-ink-3 text-[13.5px]">
                                 <Change value={props.kpis.profit.change} /> · setelah semua biaya
                             </div>
                         </div>
                         <div className="card !py-[18px]">
                             <div className="text-ink-2 text-sm">Belum dibayar pembeli</div>
-                            <div className="font-display num my-1.5 text-[27px] font-semibold">{rupiahShort(props.kpis.receivable.value)}</div>
+                            <div className="font-display num my-1.5 text-[27px] font-semibold"><CountUp value={props.kpis.receivable.value} format={rupiahShort} /></div>
                             <div className="text-ink-3 text-[13.5px]">
                                 {props.kpis.receivable.customers} customer
                                 {(props.kpis.receivable.over_30 ?? 0) > 0 && <span className="text-bad font-semibold"> · {rupiahShort(props.kpis.receivable.over_30!)} &gt; 30 hari</span>}

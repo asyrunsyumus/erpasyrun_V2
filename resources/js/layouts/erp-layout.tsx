@@ -168,7 +168,7 @@ export default function ErpLayout({ children }: { children: ReactNode }) {
                 </div>
             )}
 
-            <main className="min-w-0 px-4 pt-5 pb-12 lg:max-w-[1280px] lg:px-8 lg:pt-7">
+            <main className="erp-enter min-w-0 px-4 pt-5 pb-12 lg:max-w-[1280px] lg:px-8 lg:pt-7">
                 {flash?.success && (
                     <div className="bg-ok-soft text-ok mb-4 rounded-xl px-4 py-3 text-sm font-medium" role="status">
                         {flash.success}

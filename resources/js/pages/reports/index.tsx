@@ -3,6 +3,8 @@ import ErpLayout from '@/layouts/erp-layout';
 import { rupiah, rupiahShort } from '@/lib/format';
 import { Head, Link, router } from '@inertiajs/react';
 import { Download, Info } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { BarChart, CountUp, type BarDatum } from '@/components/motion';
 
 type Tab = 'penjualan' | 'margin' | 'hutang' | 'stok' | 'reseller';
 interface Props {
@@ -80,22 +82,53 @@ const PRESETS = [
     { label: 'Tahun ini', from: iso(new Date(now.getFullYear(), 0, 1)), to: iso(now) },
 ];
 
+type Period = 'harian' | 'pekanan' | 'bulanan';
+
+/** Mengelompokkan rekap harian menjadi per hari / per minggu (Senin) / per bulan. */
+function bucket(daily: { date: string; sales: number }[], period: Period): BarDatum[] {
+    if (period === 'harian') {
+        return daily.map((d) => ({ label: d.date.slice(8, 10) + '/' + d.date.slice(5, 7), value: d.sales }));
+    }
+    const map = new Map<string, BarDatum>();
+    for (const d of daily) {
+        const dt = new Date(d.date + 'T00:00:00');
+        let key: string;
+        let label: string;
+        if (period === 'pekanan') {
+            const mon = new Date(dt);
+            mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+            key = iso(mon);
+            label = 'Mg ' + mon.getDate() + '/' + (mon.getMonth() + 1);
+        } else {
+            key = d.date.slice(0, 7);
+            label = dt.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+        }
+        const cur = map.get(key) ?? { label, value: 0 };
+        cur.value += d.sales;
+        map.set(key, cur);
+    }
+    return [...map.values()];
+}
+
 function Daily({ daily }: { daily: NonNullable<Props['data']['daily']> }) {
+    const [period, setPeriod] = useState<Period>('harian');
+    const data = useMemo(() => bucket(daily, period), [daily, period]);
     if (daily.length < 2) return null;
-    const max = Math.max(1, ...daily.map((d) => d.sales));
     return (
         <div className="card mb-4">
-            <p className="mb-3 text-sm font-medium">Penjualan bersih per hari</p>
-            <div className="flex h-28 items-end gap-[3px]">
-                {daily.map((d) => (
-                    <div key={d.date} className="group relative flex-1">
-                        <div className="bg-brand min-h-[2px] rounded-t-sm opacity-85 group-hover:opacity-100" style={{ height: `${(d.sales / max) * 112}px` }} />
-                        <span className="bg-ink num pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded px-2 py-1 text-[11px] whitespace-nowrap text-white group-hover:block">
-                            {d.date}: {rupiah(d.sales)} · {d.orders} order
-                        </span>
-                    </div>
-                ))}
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+                <p className="flex-1 text-sm font-medium">Penjualan bersih</p>
+                <Segmented
+                    value={period}
+                    options={[
+                        { value: 'harian', label: 'Harian' },
+                        { value: 'pekanan', label: 'Pekanan' },
+                        { value: 'bulanan', label: 'Bulanan' },
+                    ]}
+                    onChange={setPeriod}
+                />
             </div>
+            <BarChart data={data} periodKey={period} format={rupiahShort} height={150} />
         </div>
     );
 }
@@ -150,7 +183,9 @@ export default function Reports({ tab, from, to, summary, data }: Props) {
                 ].map(([label, v, hint], i) => (
                     <div key={label as string} className={'rounded-[14px] border px-4 py-3.5 ' + (i === 4 ? 'bg-brand border-brand text-white' : 'card !p-0 !px-4 !py-3.5')}>
                         <div className={'text-[13px] ' + (i === 4 ? 'text-[#cbe1ea]' : 'text-ink-2')}>{label}</div>
-                        <div className={'font-display my-0.5 text-xl font-semibold ' + (i === 4 && Number(v) < 0 ? 'text-[#ffb4ae]' : '')}>{rupiahShort(Number(v))}</div>
+                        <div className={'font-display my-0.5 text-xl font-semibold ' + (i === 4 && Number(v) < 0 ? 'text-[#ffb4ae]' : '')}>
+                            <CountUp value={Number(v)} format={rupiahShort} />
+                        </div>
                         <div className={'text-[12px] ' + (i === 4 ? 'text-[#cbe1ea]' : 'text-ink-3')}>{hint}</div>
                     </div>
                 ))}

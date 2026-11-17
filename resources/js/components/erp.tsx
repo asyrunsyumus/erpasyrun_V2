@@ -31,7 +31,7 @@ export function PageHeader({ title, subtitle, children }: { title: string; subti
 /* ---------- Tombol ---------- */
 type BtnProps = { children: ReactNode; variant?: 'primary' | 'default' | 'danger' | 'ghost'; size?: 'md' | 'sm' } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 export function Btn({ children, variant = 'default', size = 'md', className = '', ...rest }: BtnProps) {
-    const base = 'inline-flex items-center justify-center gap-2 rounded-[10px] font-medium whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+    const base = 'inline-flex items-center justify-center gap-2 rounded-[10px] font-medium whitespace-nowrap transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
     const sz = size === 'sm' ? 'h-[34px] px-3 text-sm' : 'h-[42px] px-[18px]';
     const v = {
         primary: 'bg-brand text-white hover:opacity-95',
