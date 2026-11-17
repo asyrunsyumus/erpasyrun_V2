@@ -54,7 +54,7 @@ function greeting() {
 function Change({ value, invert = false }: { value?: number | null; invert?: boolean }) {
     if (value === null || value === undefined) return <span>belum ada pembanding</span>;
     const good = invert ? value <= 0 : value >= 0;
-    return <span className={good ? 'text-ok font-semibold' : 'text-bad font-semibold'}>{value >= 0 ? '▲' : '▼'} {Math.abs(value)}%</span>;
+    return <span className={good ? 'text-ok font-semibold' : 'text-bad font-semibold'}>{value >= 0 ? 'â–²' : 'â–¼'} {Math.abs(value)}%</span>;
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
@@ -109,7 +109,7 @@ export default function Dashboard(props: Props) {
                     <p className="text-ink-2 mt-1">{props.today}</p>
                 </div>
                 {(role === 'owner' || role === 'admin') && (
-                    <Link href="/orders" className="bg-brand inline-flex h-[42px] items-center gap-2 rounded-[10px] px-[18px] font-medium text-white hover:opacity-95">
+                    <Link href="/orders/create" className="bg-brand inline-flex h-[42px] items-center gap-2 rounded-[10px] px-[18px] font-medium text-white hover:opacity-95">
                         <Plus className="size-[18px]" /> Buat order baru
                     </Link>
                 )}
@@ -133,7 +133,7 @@ export default function Dashboard(props: Props) {
                                 <span className={'font-display num text-[28px] font-semibold ' + (hot ? 'text-gold-ink' : t.count === 0 ? 'text-ink-3' : '')}>{t.count}</span>
                                 <span className="font-medium">{t.title}</span>
                                 <span className="text-ink-3 text-[13.5px]">{t.detail}</span>
-                                <span className="text-brand mt-auto pt-2.5 text-sm font-medium">{t.action} →</span>
+                                <span className="text-brand mt-auto pt-2.5 text-sm font-medium">{t.action} â†’</span>
                             </Link>
                         );
                     })}
@@ -151,7 +151,7 @@ export default function Dashboard(props: Props) {
                             <div className="text-sm text-[#cbe1ea]">Penjualan</div>
                             <div className="font-display num my-1.5 text-[27px] font-semibold">{rupiahShort(props.kpis.sales.value)}</div>
                             <div className="text-[13.5px] text-[#cbe1ea]">
-                                {props.kpis.sales.change != null && <span className="font-semibold text-[#9fe0bb]">{props.kpis.sales.change >= 0 ? '▲' : '▼'} {Math.abs(props.kpis.sales.change)}% · </span>}
+                                {props.kpis.sales.change != null && <span className="font-semibold text-[#9fe0bb]">{props.kpis.sales.change >= 0 ? 'â–²' : 'â–¼'} {Math.abs(props.kpis.sales.change)}% Â· </span>}
                                 {props.kpis.sales.orders} pesanan
                             </div>
                         </div>
@@ -159,14 +159,14 @@ export default function Dashboard(props: Props) {
                             <div className="text-ink-2 text-sm">Uang masuk</div>
                             <div className="font-display num my-1.5 text-[27px] font-semibold">{rupiahShort(props.kpis.cash.value)}</div>
                             <div className="text-ink-3 text-[13.5px]">
-                                <Change value={props.kpis.cash.change} /> · dari invoice lunas
+                                <Change value={props.kpis.cash.change} /> Â· dari invoice lunas
                             </div>
                         </div>
                         <div className="card !py-[18px]">
                             <div className="text-ink-2 text-sm">Untung bersih</div>
                             <div className={'font-display num my-1.5 text-[27px] font-semibold ' + (props.kpis.profit.value < 0 ? 'text-bad' : '')}>{rupiahShort(props.kpis.profit.value)}</div>
                             <div className="text-ink-3 text-[13.5px]">
-                                <Change value={props.kpis.profit.change} /> · setelah semua biaya
+                                <Change value={props.kpis.profit.change} /> Â· setelah semua biaya
                             </div>
                         </div>
                         <div className="card !py-[18px]">
@@ -174,7 +174,7 @@ export default function Dashboard(props: Props) {
                             <div className="font-display num my-1.5 text-[27px] font-semibold">{rupiahShort(props.kpis.receivable.value)}</div>
                             <div className="text-ink-3 text-[13.5px]">
                                 {props.kpis.receivable.customers} customer
-                                {(props.kpis.receivable.over_30 ?? 0) > 0 && <span className="text-bad font-semibold"> · {rupiahShort(props.kpis.receivable.over_30!)} &gt; 30 hari</span>}
+                                {(props.kpis.receivable.over_30 ?? 0) > 0 && <span className="text-bad font-semibold"> Â· {rupiahShort(props.kpis.receivable.over_30!)} &gt; 30 hari</span>}
                             </div>
                         </div>
                     </div>
@@ -196,7 +196,7 @@ export default function Dashboard(props: Props) {
                                 </span>
                                 <span className={'font-display text-[26px] font-semibold ' + (s.done && s.count > 0 ? 'text-ok' : s.count === 0 ? 'text-ink-3' : '')}>{s.count}</span>
                                 <span className={'text-[13px] ' + (s.slow ? 'text-warn font-medium' : 'text-ink-3')}>
-                                    {s.count === 0 ? '—' : s.done ? `rata-rata ${s.avg_days} hari` : `± ${s.avg_days} hari${s.slow ? ' · tertahan' : ''}`}
+                                    {s.count === 0 ? 'â€”' : s.done ? `rata-rata ${s.avg_days} hari` : `Â± ${s.avg_days} hari${s.slow ? ' Â· tertahan' : ''}`}
                                 </span>
                             </div>
                         ))}
@@ -232,7 +232,7 @@ export default function Dashboard(props: Props) {
                             <>
                                 <p className="font-display num text-[22px] font-semibold">{props.baggage.date}</p>
                                 <p className="text-ink-3 text-[13.5px]">
-                                    {props.baggage.contact} · {props.baggage.days_left === 0 ? 'hari ini' : `${props.baggage.days_left} hari lagi`}
+                                    {props.baggage.contact} Â· {props.baggage.days_left === 0 ? 'hari ini' : `${props.baggage.days_left} hari lagi`}
                                 </p>
                                 {props.baggage.quota_grams ? (
                                     <>
@@ -240,11 +240,11 @@ export default function Dashboard(props: Props) {
                                             <i className="bg-brand block h-full rounded-md" style={{ width: `${Math.min(100, (props.baggage.used_grams / props.baggage.quota_grams) * 100)}%` }} />
                                         </div>
                                         <p className="text-ink-3 num text-[13.5px]">
-                                            {kg(props.baggage.used_grams)} terpakai dari {kg(props.baggage.quota_grams)} · sisa {kg(Math.max(0, props.baggage.quota_grams - props.baggage.used_grams))}
+                                            {kg(props.baggage.used_grams)} terpakai dari {kg(props.baggage.quota_grams)} Â· sisa {kg(Math.max(0, props.baggage.quota_grams - props.baggage.used_grams))}
                                         </p>
                                     </>
                                 ) : (
-                                    <p className="text-ink-3 num mt-3 text-[13.5px]">{kg(props.baggage.used_grams)} terpakai · kuota tanpa batas</p>
+                                    <p className="text-ink-3 num mt-3 text-[13.5px]">{kg(props.baggage.used_grams)} terpakai Â· kuota tanpa batas</p>
                                 )}
                                 <div className="text-ink-2 num mt-2.5 flex justify-between py-2">
                                     <span>Pesanan ikut</span>
@@ -257,7 +257,7 @@ export default function Dashboard(props: Props) {
                         <div className="text-ink-2 num flex justify-between py-2">
                             <span>Masih menunggu jadwal</span>
                             <b className={'font-medium ' + ((props.waiting_orders ?? 0) > 0 ? 'text-warn' : 'text-ink')}>
-                                {props.waiting_orders} pesanan · {kg(props.waiting_grams ?? 0)}
+                                {props.waiting_orders} pesanan Â· {kg(props.waiting_grams ?? 0)}
                             </b>
                         </div>
                     </section>

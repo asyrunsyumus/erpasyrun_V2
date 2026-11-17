@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MaktabahController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SetupController;
 use App\Support\Navigation;
@@ -46,6 +47,16 @@ Route::middleware(['auth'])->group(function () {
         // POST (bukan PUT) agar bisa membawa file foto.
         Route::post('products/{product}', [ProductController::class, 'update'])->name('products.update');
 
+        Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
+        Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:30,1')->name('orders.store');
+        Route::get('orders/lookup/customers', [OrderController::class, 'lookupCustomers'])->name('orders.lookup.customers');
+        Route::get('orders/lookup/products', [OrderController::class, 'lookupProducts'])->name('orders.lookup.products');
+        Route::get('orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+        Route::post('orders/{order}/paid', [OrderController::class, 'markPaid'])->name('orders.paid');
+        Route::post('orders/{order}/label', [OrderController::class, 'uploadLabel'])->name('orders.label.upload');
+        Route::get('orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
+
         Route::get('imports', [ImportController::class, 'create'])->name('imports.create');
         Route::get('imports/template/{type}', [ImportController::class, 'template'])->name('imports.template');
         Route::post('imports', [ImportController::class, 'upload'])->middleware('throttle:20,1')->name('imports.upload');
@@ -60,8 +71,11 @@ Route::middleware(['auth'])->group(function () {
     // Foto kitab: semua peran yang login boleh melihat (Tim Mesir & Gudang mencocokkan fisik kitab).
     Route::get('products/{product}/photo', [ProductController::class, 'photo'])->name('products.photo');
 
+    // Resi: Owner, Admin, dan Gudang (mencetak saat packing).
+    Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
+
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;
