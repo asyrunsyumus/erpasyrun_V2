@@ -164,6 +164,13 @@
     animation: erp-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Tampilan desktop dikecilkan ke 80% (seperti zoom browser), HP tidak terpengaruh. */
+@media (min-width: 1024px) {
+    .erp-desktop {
+        zoom: 0.8;
+    }
+}
+
 /* Kurangi gerakan: sistem pengguna meminta gerak minimal, jadi semua animasi & transisi dipangkas. */
 @media (prefers-reduced-motion: reduce) {
     *,

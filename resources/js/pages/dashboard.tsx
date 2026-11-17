@@ -45,6 +45,24 @@ interface Props {
     [key: string]: unknown;
 }
 
+type Tone = 'brand' | 'gold' | 'bad' | 'ok' | 'warn';
+/** Warna per jenis tugas: pembeda visual, bukan sekadar hiasan. Nol tugas = netral. */
+const TONE: Record<Tone, { card: string; chip: string; num: string }> = {
+    brand: { card: 'border-brand/30 bg-brand-soft/50', chip: 'bg-surface text-brand', num: 'text-brand' },
+    gold: { card: 'border-gold/50 bg-gold-soft', chip: 'bg-surface text-gold-ink', num: 'text-gold-ink' },
+    bad: { card: 'border-bad/30 bg-bad-soft/60', chip: 'bg-surface text-bad', num: 'text-bad' },
+    ok: { card: 'border-ok/30 bg-ok-soft/60', chip: 'bg-surface text-ok', num: 'text-ok' },
+    warn: { card: 'border-warn/30 bg-warn-soft/70', chip: 'bg-surface text-warn', num: 'text-warn' },
+};
+function taskTone(title: string): Tone {
+    const t = title.toLowerCase();
+    if (t.includes('pembatalan')) return 'bad';
+    if (t.includes('menunggu jadwal')) return 'gold';
+    if (t.includes('diterima') || t.includes('kiriman')) return 'warn';
+    if (t.includes('stok')) return 'ok';
+    return 'brand';
+}
+
 /** Ikon per jenis tugas: dipilih dari judulnya agar backend tidak perlu diubah. */
 function TaskIcon({ title, className }: { title: string; className?: string }) {
     const t = title.toLowerCase();
@@ -110,7 +128,7 @@ export default function Dashboard(props: Props) {
             {/* Tugas hari ini */}
             <section className="card mb-6">
                 <h3 className="mb-4 text-base font-semibold">Tugas Anda hari ini</h3>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid auto-cols-[minmax(158px,1fr)] grid-flow-col gap-2.5 overflow-x-auto pb-1">
                     {props.tasks.map((t) => {
                         const hot = t.urgent && t.count > 0;
                         return (
@@ -118,15 +136,15 @@ export default function Dashboard(props: Props) {
                                 key={t.title}
                                 href={t.href}
                                 className={
-                                    'group flex flex-col gap-1 rounded-xl border px-3.5 py-3 transition duration-150 hover:-translate-y-px ' +
-                                    (hot ? 'border-gold bg-gold-soft' : 'border-line hover:border-brand')
+                                    'group flex flex-col gap-1 rounded-xl border px-3 py-2.5 transition duration-150 hover:-translate-y-px ' +
+                                    (t.count > 0 ? TONE[taskTone(t.title)].card : 'border-line bg-surface')
                                 }
                             >
-                                <div className="mb-1 flex items-center gap-2">
-                                    <span className={'grid size-7 shrink-0 place-items-center rounded-lg ' + (hot ? 'bg-surface text-gold-ink' : 'bg-brand-soft text-brand')}>
+                                <div className="mb-0.5 flex items-center gap-2">
+                                    <span className={'grid size-7 shrink-0 place-items-center rounded-lg ' + (t.count > 0 ? TONE[taskTone(t.title)].chip : 'bg-soft text-ink-3')}>
                                         <TaskIcon title={t.title} className="size-4" />
                                     </span>
-                                    <span className={'font-display num text-xl font-semibold ' + (hot ? 'text-gold-ink' : t.count === 0 ? 'text-ink-3' : '')}>{t.count}</span>
+                                    <span className={'font-display num text-lg font-semibold ' + (t.count > 0 ? TONE[taskTone(t.title)].num : 'text-ink-3')}>{t.count}</span>
                                 </div>
                                 <span className="text-[14px] leading-snug font-medium">{t.title}</span>
                                 <span className="text-ink-3 text-[12.5px] leading-snug">{t.detail}</span>

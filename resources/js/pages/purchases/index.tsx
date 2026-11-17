@@ -1,8 +1,7 @@
-import { Btn, Field, inputCls, Modal, PageHeader, Segmented } from '@/components/erp';
-import ErpLayout from '@/layouts/erp-layout';
+import { Btn, Field, inputCls, Modal, PageHeader, Segmented } from '@/components/erp';import ErpLayout from '@/layouts/erp-layout';
 import { rupiah } from '@/lib/format';
 import { Head, useForm } from '@inertiajs/react';
-import { BookOpen, FileDown, Pencil, Store } from 'lucide-react';
+import { BookOpen, FileDown, Pencil, Plus, Store } from 'lucide-react';
 import { useState } from 'react';
 
 interface NeedItem {
@@ -74,7 +73,9 @@ function Photo({ id, has, size = 'lg' }: { id: number; has: boolean; size?: 'lg'
 
 type BuyForm = { product_id: number; maktabah_id: number | ''; qty: number | ''; price_egp: number | ''; rate: number | ''; purchased_at: string };
 
-export default function Purchases({ groups, history, maktabahs, defaultRate, isOwner, today }: Props) {
+export default function Purchases({ groups, history, maktabahs, defaultRate, isOwner, today, restocks, products }: Props & { restocks: (NeedItem & { id: number })[]; products: { id: number; sku: string; title_latin: string; title_ar: string | null }[] }) {
+    const [restockOpen, setRestockOpen] = useState(false);
+    const restockForm = useForm({ product_id: '' as number | '', qty: '' as number | '' });
     const [tab, setTab] = useState<'daftar' | 'riwayat'>('daftar');
     const [buying, setBuying] = useState<{ item?: NeedItem; history?: HistoryRow } | null>(null);
     const [egpText, setEgpText] = useState('');
@@ -158,6 +159,40 @@ export default function Purchases({ groups, history, maktabahs, defaultRate, isO
                     </form>
                 )}
             </div>
+
+            {tab === 'daftar' && (
+                <section className="card mb-5">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <h2 className="font-display text-lg font-semibold">Restok gudang</h2>
+                        <span className="text-ink-3 text-sm">· isi stok Indonesia, tanpa pesanan</span>
+                        {isOwner && (
+                            <Btn size="sm" className="ml-auto" onClick={() => setRestockOpen(true)}>
+                                <Plus className="size-4" /> Tambah restok
+                            </Btn>
+                        )}
+                    </div>
+                    {restocks.length === 0 ? (
+                        <p className="text-ink-3 text-sm">Belum ada kebutuhan restok.</p>
+                    ) : (
+                        <div className="grid gap-2 md:grid-cols-2">
+                            {restocks.map((r) => (
+                                <div key={r.id} className="border-line flex items-center gap-3 rounded-xl border p-2.5">
+                                    <Photo id={r.product_id} has={r.has_photo} size="sm" />
+                                    <div className="min-w-0 flex-1">
+                                        {r.title_ar && <span className="ar block text-left">{r.title_ar}</span>}
+                                        <span className="text-ink-2 text-[13.5px]">{r.title_latin}</span>
+                                        {r.maktabah && <span className="text-ink-3 block text-[12px]">{r.maktabah}</span>}
+                                    </div>
+                                    <span className="font-display num text-lg font-semibold">{r.qty}</span>
+                                    <Btn size="sm" variant="primary" onClick={() => openBuy({ ...r, alternates: [], orders: 0, waiting_days: 0 } as NeedItem)}>
+                                        Beli
+                                    </Btn>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
 
             {tab === 'daftar' &&
                 (groups.length === 0 ? (
@@ -253,6 +288,38 @@ export default function Purchases({ groups, history, maktabahs, defaultRate, isO
                     {!isOwner && history.length > 0 && <p className="text-ink-3 border-line border-t px-4 py-3 text-[13px]">Catatan yang sudah disimpan tidak bisa diubah. Bila salah ketik, hubungi Owner.</p>}
                 </div>
             )}
+
+            <Modal open={restockOpen} onClose={() => setRestockOpen(false)} title="Tambah restok gudang" description="Stok yang ingin diisi dari Mesir. Tim Mesir akan melihatnya di daftar belanja.">
+                <form
+                    className="grid gap-4"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        restockForm.post('/purchases/restock', { preserveScroll: true, onSuccess: () => { setRestockOpen(false); restockForm.reset(); } });
+                    }}
+                >
+                    <Field label="Kitab" error={restockForm.errors.product_id}>
+                        <select className={inputCls} value={restockForm.data.product_id} onChange={(e) => restockForm.setData('product_id', e.target.value ? Number(e.target.value) : '')} required>
+                            <option value="">— pilih kitab —</option>
+                            {products.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.title_latin} · {p.sku}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field label="Jumlah yang ingin diisi" error={restockForm.errors.qty}>
+                        <input className={inputCls + ' num'} inputMode="numeric" required value={restockForm.data.qty} onChange={(e) => restockForm.setData('qty', e.target.value.replace(/\D/g, '') === '' ? '' : Number(e.target.value.replace(/\D/g, '')))} />
+                    </Field>
+                    <div className="flex justify-end gap-2">
+                        <Btn type="button" onClick={() => setRestockOpen(false)}>
+                            Batal
+                        </Btn>
+                        <Btn variant="primary" disabled={restockForm.processing}>
+                            Tambahkan
+                        </Btn>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal
                 open={buying !== null}

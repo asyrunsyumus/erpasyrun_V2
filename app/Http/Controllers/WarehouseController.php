@@ -36,6 +36,22 @@ class WarehouseController extends Controller
                 'carrier' => $r->carrier_contact,
             ]);
 
+        // Belanja restok & kelebihan yang belum dicentang (tanpa menunggu jadwal bagasi).
+        $arrivals = DB::table('purchase_arrivals as a')->join('products as p', 'p.id', '=', 'a.product_id')
+            ->leftJoin('baggage_schedules as s', 's.id', '=', 'a.baggage_schedule_id')
+            ->whereNull('a.received_at')->orderBy('a.id')
+            ->get(['a.id', 'a.qty', 'a.source', 'p.id as product_id', 'p.title_latin', 'p.title_ar', 'p.photo_path', 's.depart_date'])
+            ->map(fn ($r) => [
+                'id' => $r->id,
+                'qty' => $r->qty,
+                'product_id' => $r->product_id,
+                'title_latin' => $r->title_latin,
+                'title_ar' => $r->title_ar,
+                'has_photo' => (bool) $r->photo_path,
+                'source' => $r->source === 'restok' ? 'Restok gudang' : 'Kelebihan belanja',
+                'schedule' => $r->depart_date ? CarbonImmutable::parse($r->depart_date)->locale('id')->translatedFormat('j F Y') : null,
+            ]);
+
         $orders = DB::table('orders as o')->join('customers as c', 'c.id', '=', 'o.customer_id')
             ->where('o.status', OrderStatus::SiapPacking->value)->whereNull('o.deleted_at')
             ->orderBy('c.name')->orderBy('o.status_changed_at')
@@ -70,6 +86,7 @@ class WarehouseController extends Controller
 
         return Inertia::render('warehouse/index', [
             'inbound' => $inbound,
+            'arrivals' => $arrivals->values(),
             'groups' => $groups,
             'packCount' => $orders->count(),
         ]);
@@ -80,6 +97,20 @@ class WarehouseController extends Controller
         $ready = $svc->receive($line, $request->user());
 
         return back()->with('success', 'Barang dikonfirmasi diterima.'.($ready ? ' Siap dipacking: '.implode(', ', $ready).'.' : ''));
+    }
+
+    public function receiveArrival(Request $request, int $arrival, WarehouseService $svc): RedirectResponse
+    {
+        $svc->receiveArrival($arrival, $request->user());
+
+        return back()->with('success', 'Dicentang. Stok bertambah.');
+    }
+
+    public function receiveArrivalsAll(Request $request, WarehouseService $svc): RedirectResponse
+    {
+        $n = $svc->receiveAllArrivals($request->user());
+
+        return back()->with('success', $n ? "{$n} barang dicentang, stok bertambah." : 'Tidak ada barang yang menunggu.');
     }
 
     /** Tandai semua kitab di satu jadwal bagasi sebagai diterima (checklist "centang semua"). */

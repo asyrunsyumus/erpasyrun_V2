@@ -109,8 +109,29 @@ class PurchaseService
             $allocated += $take;
         }
 
+        // Sisa setelah kebutuhan pesanan: isi restok gudang (FIFO), lalu kelebihan.
+        // Stok baru bertambah saat Tim Gudang mencentang kedatangan ini.
+        $restocks = DB::table('restock_needs')->where('product_id', $p->product_id)->where('status', 'open')
+            ->orderBy('created_at')->orderBy('id')->lockForUpdate()->get();
+        foreach ($restocks as $r) {
+            if ($remaining <= 0) {
+                break;
+            }
+            $take = min($remaining, $r->qty_needed - $r->qty_fulfilled);
+            if ($take <= 0) {
+                continue;
+            }
+            $filled = $r->qty_fulfilled + $take;
+            DB::table('restock_needs')->where('id', $r->id)->update([
+                'qty_fulfilled' => $filled,
+                'status' => $filled >= $r->qty_needed ? 'fulfilled' : 'open',
+                'updated_at' => now(),
+            ]);
+            $this->arrive($purchaseId, (int) $p->product_id, $take, $unitCost, 'restok', (int) $r->id);
+            $remaining -= $take;
+        }
         if ($remaining > 0) {
-            $this->stock->move((int) $p->product_id, $remaining, 'purchase_surplus', $user?->id, $unitCost, 'purchase', $purchaseId, 'Kelebihan belanja Mesir');
+            $this->arrive($purchaseId, (int) $p->product_id, $remaining, $unitCost, 'lebih', null);
         }
 
         $openLeft = (int) DB::table('purchase_needs')->where('product_id', $p->product_id)->where('status', 'open')->sum(DB::raw('qty_needed - qty_fulfilled'));
@@ -129,6 +150,25 @@ class PurchaseService
         ];
     }
 
+    /** Catat kedatangan barang dari belanja, menunggu dicentang gudang. Dijadwalkan ke bagasi terdekat bila ada. */
+    private function arrive(int $purchaseId, int $productId, int $qty, int $unitCost, string $source, ?int $restockId): void
+    {
+        $scheduleId = DB::table('baggage_schedules')->where('status', 'open')
+            ->where('depart_date', '>=', now()->toDateString())->orderBy('depart_date')->orderBy('id')->value('id');
+
+        DB::table('purchase_arrivals')->insert([
+            'purchase_id' => $purchaseId,
+            'product_id' => $productId,
+            'qty' => $qty,
+            'unit_cost_idr' => $unitCost,
+            'source' => $source,
+            'restock_need_id' => $restockId,
+            'baggage_schedule_id' => $scheduleId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     /** Batalkan efek satu transaksi (dipakai saat koreksi). */
     private function revert(int $purchaseId, ?User $user): void
     {
@@ -145,12 +185,19 @@ class PurchaseService
         }
         DB::table('purchase_allocations')->where('purchase_id', $purchaseId)->delete();
 
-        // Kembalikan kelebihan yang dulu masuk stok.
-        $surplus = (int) DB::table('stock_movements')->where('ref_type', 'purchase')->where('ref_id', $purchaseId)->sum('qty');
-        if ($surplus !== 0) {
-            $p = DB::table('purchases')->where('id', $purchaseId)->first();
-            $this->stock->move((int) $p->product_id, -$surplus, 'purchase_surplus', $user?->id, 0, 'purchase', $purchaseId, 'Koreksi belanja (dibatalkan)');
+        // Batalkan kedatangan: isi restok dikembalikan ke kebutuhan; yang sudah masuk stok ditarik lagi.
+        foreach (DB::table('purchase_arrivals')->where('purchase_id', $purchaseId)->get() as $a) {
+            if ($a->received_at) {
+                $this->stock->move((int) $a->product_id, -$a->qty, 'purchase_surplus', $user?->id, (int) $a->unit_cost_idr, 'purchase_arrival', (int) $a->id, 'Koreksi belanja (dibatalkan)');
+            }
+            if ($a->restock_need_id) {
+                $n = DB::table('restock_needs')->where('id', $a->restock_need_id)->lockForUpdate()->first();
+                if ($n && $n->status !== 'cancelled') {
+                    DB::table('restock_needs')->where('id', $n->id)->update(['qty_fulfilled' => max(0, $n->qty_fulfilled - $a->qty), 'status' => 'open', 'updated_at' => now()]);
+                }
+            }
         }
+        DB::table('purchase_arrivals')->where('purchase_id', $purchaseId)->delete();
 
         // Pesanan yang tadinya lengkap bisa kembali ke "Belanja di Mesir".
         foreach (array_unique($touched) as $orderId) {
@@ -179,6 +226,8 @@ class PurchaseService
                 ->where('a.purchase_id', $purchaseId)
                 ->whereIn('o.status', ['dalam_bagasi', 'siap_packing', 'selesai'])
                 ->exists();
+            // Kalau kedatangannya sudah dicentang gudang, stok sudah bergerak → tidak boleh dikoreksi.
+            $locked = $locked || DB::table('purchase_arrivals')->where('purchase_id', $purchaseId)->whereNotNull('received_at')->exists();
             if ($locked) {
                 throw ValidationException::withMessages(['qty' => 'Kitab dari catatan ini sudah ikut jadwal bagasi, jadi tidak bisa dikoreksi lagi.']);
             }

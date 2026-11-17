@@ -92,6 +92,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:owner')->group(function () {
         Route::put('purchases/{purchase}', [PurchaseController::class, 'update'])->whereNumber('purchase')->name('purchases.update');
         Route::post('purchases/rate', [PurchaseController::class, 'setRate'])->name('purchases.rate');
+        Route::post('purchases/restock', [PurchaseController::class, 'restockStore'])->name('restock.store');
+        Route::post('purchases/restock/{restock}/cancel', [PurchaseController::class, 'restockCancel'])->whereNumber('restock')->name('restock.cancel');
 
         Route::get('baggage', [BaggageController::class, 'index'])->name('baggage.index');
         Route::post('baggage', [BaggageController::class, 'store'])->name('baggage.store');
@@ -105,7 +107,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:gudang')->group(function () {
         Route::get('warehouse', [WarehouseController::class, 'index'])->name('warehouse.index');
         Route::post('warehouse/inbound/{line}/receive', [WarehouseController::class, 'receive'])->whereNumber('line')->name('warehouse.receive');
-        Route::post('warehouse/schedules/{schedule}/receive-all', [WarehouseController::class, 'receiveAll'])->whereNumber('schedule')->name('warehouse.receiveAll');
+        Route::post('warehouse/arrivals/receive-all', [WarehouseController::class, 'receiveArrivalsAll'])->name('warehouse.arrivals.all');
+        Route::post('warehouse/arrivals/{arrival}/receive', [WarehouseController::class, 'receiveArrival'])->whereNumber('arrival')->name('warehouse.arrivals.receive');
+        Route::post('warehouse/schedules/{schedule}/receive-all',[WarehouseController::class, 'receiveAll'])->whereNumber('schedule')->name('warehouse.receiveAll');
         Route::post('warehouse/items/{item}/check', [WarehouseController::class, 'check'])->whereNumber('item')->name('warehouse.check');
         Route::post('warehouse/orders/{order}/finish', [WarehouseController::class, 'finish'])->whereNumber('order')->name('warehouse.finish');
     });

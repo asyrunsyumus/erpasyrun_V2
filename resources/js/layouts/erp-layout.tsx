@@ -142,8 +142,8 @@ export default function ErpLayout({ children }: { children: ReactNode }) {
     const { flash } = usePage<SharedData>().props;
 
     return (
-        <div className="min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
-            <aside className="bg-surface border-line sticky top-0 hidden h-screen overflow-y-auto border-r lg:block">
+        <div className="erp-desktop min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
+            <aside className="bg-surface border-line sticky top-0 hidden overflow-y-auto border-r lg:block lg:h-[125vh]">
                 <Sidebar />
             </aside>
 

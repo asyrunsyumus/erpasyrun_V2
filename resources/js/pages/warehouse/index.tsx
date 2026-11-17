@@ -60,7 +60,20 @@ function Box({ checked, busy, onClick, label }: { checked: boolean; busy?: boole
     );
 }
 
-export default function Warehouse({ inbound, groups, packCount }: { inbound: Inbound[]; groups: Group[]; packCount: number }) {
+interface Arrival {
+    id: number;
+    qty: number;
+    product_id: number;
+    title_latin: string;
+    title_ar: string | null;
+    has_photo: boolean;
+    source: string;
+    schedule: string | null;
+}
+
+export default function Warehouse({ inbound, arrivals, groups, packCount }: { inbound: Inbound[]; arrivals: Arrival[]; groups: Group[]; packCount: number }) {
+    const receiveArrival = (id: number) => router.post(`/warehouse/arrivals/${id}/receive`, {}, { preserveScroll: true });
+    const receiveArrivalsAll = () => router.post('/warehouse/arrivals/receive-all', {}, { preserveScroll: true });
     const { errors } = usePage().props as unknown as { errors: Record<string, string> };
     const [tab, setTab] = useState<'terima' | 'packing'>(inbound.length === 0 && packCount > 0 ? 'packing' : 'terima');
     const [busy, setBusy] = useState<string | null>(null);
@@ -102,6 +115,37 @@ export default function Warehouse({ inbound, groups, packCount }: { inbound: Inb
                 />
             </div>
             <ErrorBanner message={errors.finish || errors.line} />
+
+            {tab === 'terima' && arrivals.length > 0 && (
+                <section className="card mb-4">
+                    <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                        <div className="min-w-0 flex-1">
+                            <h2 className="font-display text-lg leading-tight font-semibold">Restok & kelebihan belanja</h2>
+                            <p className="text-ink-3 text-[13px]">Stok di data produk bertambah setelah dicentang di sini.</p>
+                        </div>
+                        <Btn variant="primary" size="sm" onClick={receiveArrivalsAll}>
+                            <Check className="size-4" /> Centang semua
+                        </Btn>
+                    </div>
+                    <ul className="grid gap-2 md:grid-cols-2">
+                        {arrivals.map((a) => (
+                            <li key={a.id} className="border-line flex items-center gap-3 rounded-xl border p-2.5">
+                                <Box label={`Terima ${a.title_latin}`} onClick={() => receiveArrival(a.id)} checked={false} />
+                                <Photo id={a.product_id} has={a.has_photo} cls="h-12 w-9" />
+                                <div className="min-w-0 flex-1">
+                                    {a.title_ar && <span className="ar block text-left text-[16px]">{a.title_ar}</span>}
+                                    <span className="text-ink-2 text-[13.5px]">{a.title_latin}</span>
+                                    <span className="text-ink-3 block text-[12px]">
+                                        {a.source}
+                                        {a.schedule ? ` · bagasi ${a.schedule}` : ' · belum ada jadwal bagasi'}
+                                    </span>
+                                </div>
+                                <span className="font-display num text-lg font-semibold">×{a.qty}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
 
             {tab === 'terima' &&
                 (bySchedule.length === 0 ? (

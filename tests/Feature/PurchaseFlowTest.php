@@ -112,7 +112,10 @@ class PurchaseFlowTest extends TestCase
     {
         $this->order(2);
         $this->buy(5)->assertSessionHas('success', fn ($m) => str_contains($m, 'Kelebihan 3'));
-        $this->assertSame(3, $this->stock());
+        // Kelebihan menunggu dicentang gudang; stok belum bertambah.
+        $this->assertSame(0, $this->stock());
+        $this->assertSame(3, (int) DB::table('purchase_arrivals')->where('source', 'lebih')->value('qty'));
+        $this->actingAs(User::factory()->role(Role::Gudang)->create())->post('/warehouse/arrivals/receive-all');
         $this->assertSame(26563, (int) DB::table('product_stock')->value('avg_cost_idr')); // 85 × 312,5
     }
 
@@ -155,8 +158,8 @@ class PurchaseFlowTest extends TestCase
     public function test_owner_correction_recalculates_stock_and_order_status()
     {
         $o = $this->order(3);
-        $this->buy(5); // 2 kelebihan masuk stok
-        $this->assertSame(2, $this->stock());
+        $this->buy(5); // 2 kelebihan menunggu centang gudang
+        $this->assertSame(0, $this->stock());
         $this->assertSame(OrderStatus::MenungguBagasi, $o->refresh()->status);
 
         $id = DB::table('purchases')->value('id');

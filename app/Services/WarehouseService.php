@@ -52,6 +52,32 @@ class WarehouseService
         });
     }
 
+    /** Centang satu kedatangan belanja Mesir (restok / kelebihan): stok bertambah sekarang. */
+    public function receiveArrival(int $arrivalId, User $user): void
+    {
+        DB::transaction(function () use ($arrivalId, $user) {
+            $a = DB::table('purchase_arrivals')->where('id', $arrivalId)->lockForUpdate()->first();
+            abort_unless($a, 404);
+            if ($a->received_at) {
+                throw ValidationException::withMessages(['arrival' => 'Barang ini sudah dicentang.']);
+            }
+            DB::table('purchase_arrivals')->where('id', $arrivalId)->update(['received_at' => now(), 'received_by' => $user->id, 'updated_at' => now()]);
+            $this->stock->move((int) $a->product_id, (int) $a->qty, 'purchase_surplus', $user->id, (int) $a->unit_cost_idr, 'purchase_arrival', $arrivalId, 'Diterima gudang dari belanja Mesir');
+            Audit::log('warehouse.receive_arrival', null, null, ['arrival_id' => $arrivalId, 'product_id' => $a->product_id, 'qty' => $a->qty]);
+        });
+    }
+
+    /** Centang semua kedatangan yang belum diterima. @return int */
+    public function receiveAllArrivals(User $user): int
+    {
+        $ids = DB::table('purchase_arrivals')->whereNull('received_at')->pluck('id');
+        foreach ($ids as $id) {
+            $this->receiveArrival((int) $id, $user);
+        }
+
+        return $ids->count();
+    }
+
     /** Konfirmasi semua baris yang belum diterima di satu jadwal. @return int jumlah baris yang baru dikonfirmasi */
     public function receiveSchedule(int $scheduleId, User $user): int
     {

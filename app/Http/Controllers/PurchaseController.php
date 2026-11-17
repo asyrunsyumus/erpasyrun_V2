@@ -91,7 +91,28 @@ class PurchaseController extends Controller
                 'corrected' => (bool) $r->corrected_at,
             ]);
 
+        $restocks = DB::table('restock_needs as n')->join('products as p', 'p.id', '=', 'n.product_id')
+            ->leftJoin('maktabahs as m', 'm.id', '=', 'p.primary_maktabah_id')
+            ->where('n.status', 'open')->orderBy('n.created_at')
+            ->get(['n.id', 'n.qty_needed', 'n.qty_fulfilled', 'p.id as product_id', 'p.sku', 'p.title_latin', 'p.title_ar', 'p.author', 'p.photo_path', 'p.price_egp', 'p.weight_grams', 'p.primary_maktabah_id', 'm.name as maktabah'])
+            ->map(fn ($r) => [
+                'id' => $r->id,
+                'product_id' => $r->product_id,
+                'sku' => $r->sku,
+                'title_latin' => $r->title_latin,
+                'title_ar' => $r->title_ar,
+                'author' => $r->author,
+                'has_photo' => (bool) $r->photo_path,
+                'price_egp' => (int) $r->price_egp,
+                'weight_grams' => (int) $r->weight_grams,
+                'maktabah_id' => $r->primary_maktabah_id,
+                'maktabah' => $r->maktabah,
+                'qty' => (int) $r->qty_needed - (int) $r->qty_fulfilled,
+            ]);
+
         return Inertia::render('purchases/index', [
+            'restocks' => $restocks->values(),
+            'products' => DB::table('products')->whereNull('deleted_at')->where('is_active', true)->orderBy('title_latin')->limit(1000)->get(['id', 'sku', 'title_latin', 'title_ar']),
             'groups' => $this->shoppingList(),
             'history' => $history,
             'maktabahs' => Maktabah::orderBy('name')->get(['id', 'name']),
@@ -140,7 +161,7 @@ class PurchaseController extends Controller
 
         $msg = "Tersimpan: {$data['qty']} buah.";
         if ($r['surplus'] > 0) {
-            $msg .= " Kelebihan {$r['surplus']} buah masuk stok Indonesia.";
+            $msg .= " Kelebihan {$r['surplus']} buah masuk daftar terima gudang (stok bertambah setelah dicentang).";
         }
         if ($r['shortfall'] > 0) {
             $msg .= " Masih kurang {$r['shortfall']} buah — tetap di daftar, Owner sudah diberi tahu.";
@@ -162,6 +183,34 @@ class PurchaseController extends Controller
         $service->correct($purchase, $data, $request->user());
 
         return back()->with('success', 'Catatan belanja dikoreksi. Stok dan status pesanan dihitung ulang.');
+    }
+
+    /** Hanya Owner: tambah kebutuhan restok gudang (stok yang ingin diisi, tanpa pesanan). */
+    public function restockStore(Request $request): RedirectResponse
+    {
+        $d = $request->validate([
+            'product_id' => ['required', 'integer', Rule::exists('products', 'id')->whereNull('deleted_at')],
+            'qty' => ['required', 'integer', 'min:1', 'max:100000'],
+        ], ['qty.min' => 'Jumlah minimal 1.']);
+
+        DB::table('restock_needs')->insert(['product_id' => $d['product_id'], 'qty_needed' => $d['qty'], 'qty_fulfilled' => 0, 'status' => 'open', 'created_by' => $request->user()->id, 'created_at' => now(), 'updated_at' => now()]);
+        Audit::log('restock.create', null, null, $d);
+
+        return back()->with('success', 'Restok ditambahkan ke daftar belanja Tim Mesir.');
+    }
+
+    /** Hanya Owner: batalkan restok yang belum dibelanjakan sama sekali. */
+    public function restockCancel(int $restock): RedirectResponse
+    {
+        $n = DB::table('restock_needs')->where('id', $restock)->first();
+        abort_unless($n, 404);
+        if ($n->qty_fulfilled > 0) {
+            return back()->withErrors(['restock' => 'Restok ini sudah mulai dibelanjakan, tidak bisa dibatalkan.']);
+        }
+        DB::table('restock_needs')->where('id', $restock)->update(['status' => 'cancelled', 'updated_at' => now()]);
+        Audit::log('restock.cancel', null, (array) $n);
+
+        return back()->with('success', 'Restok dibatalkan.');
     }
 
     /** Hanya Owner: kurs default yang otomatis terisi di form Tim Mesir. */
