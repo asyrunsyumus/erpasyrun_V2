@@ -29,14 +29,14 @@ class DeployController extends Controller
 
         @unlink($file);
 
+        $commands = [['migrate', ['--force' => true]]];
+        // Saat tes otomatis, jangan menulis cache config/route (akan "membekukan" config tes ke laptop).
+        if (! app()->runningUnitTests()) {
+            array_push($commands, ['optimize:clear', []], ['config:cache', []], ['route:cache', []], ['view:cache', []]);
+        }
+
         $log = [];
-        foreach ([
-            ['migrate', ['--force' => true]],
-            ['optimize:clear', []],
-            ['config:cache', []],
-            ['route:cache', []],
-            ['view:cache', []],
-        ] as [$cmd, $args]) {
+        foreach ($commands as [$cmd, $args]) {
             $code = Artisan::call($cmd, $args);
             $log[] = "$ php artisan $cmd (exit $code)\n".trim(Artisan::output());
         }
