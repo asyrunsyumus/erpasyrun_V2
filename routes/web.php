@@ -8,10 +8,10 @@ use Inertia\Inertia;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-// Pasca-deploy (migrasi + cache). Tanpa sesi agar bisa jalan sebelum tabel sessions ada.
+// Pasca-deploy (migrasi + cache). Tanpa sesi & tanpa throttle karena keduanya butuh tabel
+// yang justru dibuat oleh endpoint ini. Pengamannya: token acak ≥40 karakter, sekali pakai.
 Route::post('_deploy', DeployController::class)
-    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\EnsureAccountUsable::class, \App\Http\Middleware\HandleInertiaRequests::class])
-    ->middleware('throttle:5,1');
+    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\EnsureAccountUsable::class, \App\Http\Middleware\HandleInertiaRequests::class]);
 
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
