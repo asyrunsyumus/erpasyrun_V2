@@ -32,6 +32,10 @@ class UserFactory extends Factory
             'role' => Role::Admin,
             'is_active' => true,
             'must_change_password' => false,
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+            'two_factor_last_step' => null,
             'remember_token' => Str::random(10),
         ];
     }

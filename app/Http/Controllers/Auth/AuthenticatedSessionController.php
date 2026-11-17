@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\TwoFactor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,9 +28,19 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, TwoFactor $twoFactor): RedirectResponse
     {
         $request->authenticate();
+
+        $user = $request->user();
+        if ($twoFactor->enabled($user)) {
+            // Password benar, tapi belum boleh masuk sebelum kode authenticator diverifikasi.
+            Auth::guard('web')->logout();
+            $request->session()->regenerate();
+            $request->session()->put('login.2fa', ['id' => $user->id, 'remember' => $request->boolean('remember'), 'expires' => now()->addMinutes(5)->timestamp]);
+
+            return redirect()->route('two-factor.challenge');
+        }
 
         $request->session()->regenerate();
 

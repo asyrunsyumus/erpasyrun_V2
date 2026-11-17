@@ -34,6 +34,12 @@ class EnsureAccountUsable
                 ->with('status', 'Silakan ganti password sementara Anda sebelum mulai bekerja.');
         }
 
+        // Owner wajib mengaktifkan verifikasi dua langkah sebelum bisa membuka apa pun.
+        if ($user && $user->isOwner() && config('erp.require_owner_2fa') && $user->two_factor_confirmed_at === null
+            && ! $request->routeIs('two-factor.*', 'logout', 'password.edit', 'password.update')) {
+            return redirect()->route('two-factor.show');
+        }
+
         return $next($request);
     }
 }

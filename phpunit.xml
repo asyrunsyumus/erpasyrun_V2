@@ -29,5 +29,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <!-- Tes alur bisnis tidak perlu 2FA; tes khusus 2FA menyalakannya sendiri. -->
+        <env name="ERP_REQUIRE_OWNER_2FA" value="false"/>
     </php>
 </phpunit>

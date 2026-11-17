@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 const items = [
     { title: 'Profil', url: '/settings/profile' },
     { title: 'Ganti password', url: '/settings/password' },
+    { title: 'Verifikasi dua langkah', url: '/settings/two-factor' },
     { title: 'Tampilan', url: '/settings/appearance' },
 ];
 

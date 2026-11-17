@@ -43,6 +43,8 @@ class HandleInertiaRequests extends Middleware
                 'temp_password' => fn () => $request->session()->get('temp_password'),
             ],
             'unread' => fn () => $user ? $user->unreadNotifications()->count() : 0,
+            // Untuk form HTML biasa (mis. unduh cadangan) yang tidak lewat Inertia.
+            'csrf' => fn () => csrf_token(),
         ];
     }
 }

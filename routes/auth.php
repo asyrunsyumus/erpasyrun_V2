@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use Illuminate\Support\Facades\Route;
 
 // Tidak ada pendaftaran publik: akun staf hanya dibuat oleh Owner.
@@ -14,6 +15,9 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:20,1');
+
+    Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+    Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:20,1')->name('two-factor.verify');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

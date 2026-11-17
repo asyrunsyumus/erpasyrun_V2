@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BaggageController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ReportController;
@@ -145,6 +146,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('shop-settings', [ShopSettingsController::class, 'edit'])->name('shop.index');
         Route::put('shop-settings', [ShopSettingsController::class, 'update'])->name('shop.update');
+        Route::post('backup', [BackupController::class, 'download'])->middleware('throttle:5,10')->name('backup.download');
     });
 
     // ---------- Notifikasi (setiap orang miliknya sendiri) ----------
