@@ -1,3 +1,11 @@
+# Folder induk menolak semua akses (lihat ../.htaccess); hanya folder ini yang dibuka.
+Require all granted
+
+# Jangan pernah sajikan file tersembunyi (.env, .git, dll).
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
