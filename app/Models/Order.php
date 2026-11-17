@@ -46,7 +46,8 @@ class Order extends Model
 
     public function label(): HasOne
     {
-        return $this->hasOne(ShippingLabel::class)->latestOfMany();
+        // latestOfMany() memakai subquery join yang membuat kolom order_id ambigu di MariaDB.
+        return $this->hasOne(ShippingLabel::class)->latest('id');
     }
 
     public function histories(): HasMany
