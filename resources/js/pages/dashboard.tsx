@@ -2,7 +2,7 @@ import ErpLayout from '@/layouts/erp-layout';
 import { kg, rupiahShort } from '@/lib/format';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { CircleX, Clock, ClipboardCheck, FileText, Package, PackageCheck, PackageOpen, Plane, Plus, ShoppingBag, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
 import { BarChart, CountUp } from '@/components/motion';
 
@@ -43,6 +43,22 @@ interface Props {
     debtors?: { name: string; type: string; amount: number; days: number }[];
     top_products?: { title_ar: string | null; title_latin: string; sold: number; profit: number; margin: number }[];
     [key: string]: unknown;
+}
+
+/** Ikon per jenis tugas: dipilih dari judulnya agar backend tidak perlu diubah. */
+function TaskIcon({ title, className }: { title: string; className?: string }) {
+    const t = title.toLowerCase();
+    const I = t.includes('bagasi') && t.includes('diterima') ? PackageCheck
+        : t.includes('menunggu jadwal') ? Plane
+        : t.includes('pembatalan') ? CircleX
+        : t.includes('belanja') ? ShoppingBag
+        : t.includes('stok') ? ClipboardCheck
+        : t.includes('packing') || t.includes('dipacking') ? Package
+        : t.includes('diterima') || t.includes('kiriman') ? PackageOpen
+        : t.includes('belum dibayar') || t.includes('bayar') ? Wallet
+        : t.includes('resi') ? FileText
+        : Clock;
+    return <I className={className} strokeWidth={1.8} />;
 }
 
 function greeting() {
@@ -102,14 +118,21 @@ export default function Dashboard(props: Props) {
                                 key={t.title}
                                 href={t.href}
                                 className={
-                                    'flex flex-col gap-1 rounded-xl border p-4 transition-colors ' +
+                                    'group flex flex-col gap-1 rounded-xl border px-3.5 py-3 transition duration-150 hover:-translate-y-px ' +
                                     (hot ? 'border-gold bg-gold-soft' : 'border-line hover:border-brand')
                                 }
                             >
-                                <span className={'font-display num text-[28px] font-semibold ' + (hot ? 'text-gold-ink' : t.count === 0 ? 'text-ink-3' : '')}>{t.count}</span>
-                                <span className="font-medium">{t.title}</span>
-                                <span className="text-ink-3 text-[13.5px]">{t.detail}</span>
-                                <span className="text-brand mt-auto pt-2.5 text-sm font-medium">{t.action} →</span>
+                                <div className="mb-1 flex items-center gap-2">
+                                    <span className={'grid size-7 shrink-0 place-items-center rounded-lg ' + (hot ? 'bg-surface text-gold-ink' : 'bg-brand-soft text-brand')}>
+                                        <TaskIcon title={t.title} className="size-4" />
+                                    </span>
+                                    <span className={'font-display num text-xl font-semibold ' + (hot ? 'text-gold-ink' : t.count === 0 ? 'text-ink-3' : '')}>{t.count}</span>
+                                </div>
+                                <span className="text-[14px] leading-snug font-medium">{t.title}</span>
+                                <span className="text-ink-3 text-[12.5px] leading-snug">{t.detail}</span>
+                                <span className="text-brand mt-auto pt-2 text-[13px] font-medium">
+                                    {t.action} <span className="inline-block transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+                                </span>
                             </Link>
                         );
                     })}

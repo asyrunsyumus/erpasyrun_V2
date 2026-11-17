@@ -100,6 +100,16 @@ class BaggageController extends Controller
             : 'Perubahan disimpan.');
     }
 
+    /** Cocokkan ulang semua pesanan yang menunggu ke jadwal terdekat (tombol manual). */
+    public function match(Request $request, BaggageService $svc): RedirectResponse
+    {
+        $assigned = $svc->matchWaiting($request->user());
+
+        return back()->with('success', $assigned
+            ? count($assigned).' pesanan dicocokkan ke jadwal: '.implode(', ', $assigned).'.'
+            : 'Tidak ada pesanan yang bisa dicocokkan. Cek kuota jadwal yang akan datang atau buat jadwal baru.');
+    }
+
     public function move(Request $request, int $schedule, BaggageService $svc): RedirectResponse
     {
         $d = $request->validate(['target_id' => ['required', 'integer']], ['target_id.required' => 'Pilih jadwal tujuan.']);

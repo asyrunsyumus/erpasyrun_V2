@@ -114,12 +114,18 @@ class PurchaseService
         }
 
         $openLeft = (int) DB::table('purchase_needs')->where('product_id', $p->product_id)->where('status', 'open')->sum(DB::raw('qty_needed - qty_fulfilled'));
+        $ready = $this->advanceOrders(array_unique($touchedOrders), $user);
+
+        // Pesanan yang baru lengkap langsung dicocokkan ke jadwal bagasi terdekat yang masih punya kuota.
+        if ($ready) {
+            app(BaggageService::class)->matchWaiting($user);
+        }
 
         return [
             'allocated' => $allocated,
             'surplus' => $remaining,
             'shortfall' => $openLeft,
-            'orders_ready' => $this->advanceOrders(array_unique($touchedOrders), $user),
+            'orders_ready' => $ready,
         ];
     }
 

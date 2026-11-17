@@ -22,9 +22,10 @@ class WarehouseController extends Controller
             ->leftJoin('maktabahs as m', 'm.id', '=', 'p.primary_maktabah_id')
             ->whereNull('l.received_at')
             ->orderBy('s.depart_date')->orderBy('p.title_latin')
-            ->get(['l.id', 'l.qty', 'p.id as product_id', 'p.title_latin', 'p.title_ar', 'p.photo_path', 'm.name as maktabah', 's.depart_date', 's.carrier_contact'])
+            ->get(['l.id', 'l.qty', 'p.id as product_id', 'p.title_latin', 'p.title_ar', 'p.photo_path', 'm.name as maktabah', 's.id as schedule_id', 's.depart_date', 's.carrier_contact'])
             ->map(fn ($r) => [
                 'id' => $r->id,
+                'schedule_id' => $r->schedule_id,
                 'qty' => $r->qty,
                 'product_id' => $r->product_id,
                 'title_latin' => $r->title_latin,
@@ -79,6 +80,14 @@ class WarehouseController extends Controller
         $ready = $svc->receive($line, $request->user());
 
         return back()->with('success', 'Barang dikonfirmasi diterima.'.($ready ? ' Siap dipacking: '.implode(', ', $ready).'.' : ''));
+    }
+
+    /** Tandai semua kitab di satu jadwal bagasi sebagai diterima (checklist "centang semua"). */
+    public function receiveAll(Request $request, int $schedule, WarehouseService $svc): RedirectResponse
+    {
+        $n = $svc->receiveSchedule($schedule, $request->user());
+
+        return back()->with('success', $n ? "{$n} judul ditandai diterima." : 'Semua kitab di jadwal ini sudah dikonfirmasi.');
     }
 
     public function check(Request $request, int $item, WarehouseService $svc): RedirectResponse

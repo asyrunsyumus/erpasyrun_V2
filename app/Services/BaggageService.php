@@ -106,6 +106,24 @@ class BaggageService
         return $assigned;
     }
 
+    /**
+     * Cocokkan semua pesanan yang menunggu ke jadwal yang akan datang, dari yang paling dekat berangkat.
+     * Dipanggil otomatis saat pesanan selesai dibelanjakan, dan bisa dijalankan manual oleh Owner.
+     * @return list<string> nomor pesanan yang berhasil dipasang
+     */
+    public function matchWaiting(?User $user = null): array
+    {
+        $assigned = [];
+        $schedules = DB::table('baggage_schedules')->where('status', 'open')
+            ->where('depart_date', '>=', now()->toDateString())
+            ->orderBy('depart_date')->orderBy('id')->pluck('id');
+        foreach ($schedules as $sid) {
+            $assigned = [...$assigned, ...$this->fill((int) $sid, $user)];
+        }
+
+        return $assigned;
+    }
+
     private function attach(int $scheduleId, Order $order, int $grams, ?User $user): void
     {
         DB::table('baggage_loads')->insert(['baggage_schedule_id' => $scheduleId, 'order_id' => $order->id, 'weight_grams' => $grams, 'assigned_at' => now()]);

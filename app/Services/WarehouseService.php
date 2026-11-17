@@ -52,6 +52,17 @@ class WarehouseService
         });
     }
 
+    /** Konfirmasi semua baris yang belum diterima di satu jadwal. @return int jumlah baris yang baru dikonfirmasi */
+    public function receiveSchedule(int $scheduleId, User $user): int
+    {
+        $lines = DB::table('inbound_lines')->where('baggage_schedule_id', $scheduleId)->whereNull('received_at')->pluck('id');
+        foreach ($lines as $id) {
+            $this->receive((int) $id, $user);
+        }
+
+        return $lines->count();
+    }
+
     public function toggleCheck(int $itemId, bool $checked, User $user): void
     {
         $orderId = (int) DB::table('order_items')->where('id', $itemId)->value('order_id');

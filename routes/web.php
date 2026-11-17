@@ -95,6 +95,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('baggage', [BaggageController::class, 'index'])->name('baggage.index');
         Route::post('baggage', [BaggageController::class, 'store'])->name('baggage.store');
+        Route::post('baggage/match', [BaggageController::class, 'match'])->name('baggage.match');
         Route::put('baggage/{schedule}', [BaggageController::class, 'update'])->whereNumber('schedule')->name('baggage.update');
         Route::post('baggage/{schedule}/move', [BaggageController::class, 'move'])->whereNumber('schedule')->name('baggage.move');
         Route::delete('baggage/{schedule}', [BaggageController::class, 'destroy'])->whereNumber('schedule')->name('baggage.destroy');
@@ -104,6 +105,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:gudang')->group(function () {
         Route::get('warehouse', [WarehouseController::class, 'index'])->name('warehouse.index');
         Route::post('warehouse/inbound/{line}/receive', [WarehouseController::class, 'receive'])->whereNumber('line')->name('warehouse.receive');
+        Route::post('warehouse/schedules/{schedule}/receive-all', [WarehouseController::class, 'receiveAll'])->whereNumber('schedule')->name('warehouse.receiveAll');
         Route::post('warehouse/items/{item}/check', [WarehouseController::class, 'check'])->whereNumber('item')->name('warehouse.check');
         Route::post('warehouse/orders/{order}/finish', [WarehouseController::class, 'finish'])->whereNumber('order')->name('warehouse.finish');
     });

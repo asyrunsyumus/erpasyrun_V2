@@ -1,11 +1,12 @@
-import { Btn, ErrorBanner, Modal, PageHeader, Segmented } from '@/components/erp';
+import { Btn, ErrorBanner, PageHeader, Segmented } from '@/components/erp';
 import ErpLayout from '@/layouts/erp-layout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { BookOpen, Check, Plane, Printer, User } from 'lucide-react';
-import { useState } from 'react';
+import { BookOpen, Check, Package, Plane, Printer, User } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface Inbound {
     id: number;
+    schedule_id: number;
     qty: number;
     product_id: number;
     title_latin: string;
@@ -35,34 +36,66 @@ function Photo({ id, has, cls }: { id: number; has: boolean; cls: string }) {
         <img src={`/products/${id}/photo`} alt="" loading="lazy" className={`${cls} bg-soft shrink-0 rounded-md object-cover`} />
     ) : (
         <span className={`${cls} bg-soft text-ink-3 grid shrink-0 place-items-center rounded-md`}>
-            <BookOpen className="size-5" />
+            <BookOpen className="size-4" />
         </span>
     );
 }
 
+/** Checkbox besar yang bisa disentuh dari HP. */
+function Box({ checked, busy, onClick, label }: { checked: boolean; busy?: boolean; onClick?: () => void; label: string }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={checked || busy || !onClick}
+            aria-label={label}
+            className={
+                'grid size-8 shrink-0 place-items-center rounded-lg border-2 transition duration-150 ' +
+                (checked ? 'border-ok bg-ok text-white' : 'border-input bg-surface hover:border-brand active:scale-95') +
+                (busy ? ' opacity-50' : '')
+            }
+        >
+            {checked && <Check className="size-[18px]" strokeWidth={2.5} />}
+        </button>
+    );
+}
+
 export default function Warehouse({ inbound, groups, packCount }: { inbound: Inbound[]; groups: Group[]; packCount: number }) {
-    const { errors } = usePage().props as { errors: Record<string, string> };
+    const { errors } = usePage().props as unknown as { errors: Record<string, string> };
     const [tab, setTab] = useState<'terima' | 'packing'>(inbound.length === 0 && packCount > 0 ? 'packing' : 'terima');
-    const [confirming, setConfirming] = useState<Inbound | null>(null);
-    const [busy, setBusy] = useState<number | null>(null);
+    const [busy, setBusy] = useState<string | null>(null);
 
-    const bySchedule = inbound.reduce<Record<string, Inbound[]>>((acc, l) => {
-        (acc[l.schedule] ??= []).push(l);
-        return acc;
-    }, {});
+    // Kiriman dikelompokkan per jadwal bagasi (satu jadwal = satu rombongan).
+    const bySchedule = useMemo(() => {
+        const m = new Map<number, { title: string; carrier: string; lines: Inbound[] }>();
+        for (const l of inbound) {
+            const cur = m.get(l.schedule_id) ?? { title: l.schedule, carrier: l.carrier, lines: [] };
+            cur.lines.push(l);
+            m.set(l.schedule_id, cur);
+        }
+        return [...m.entries()];
+    }, [inbound]);
 
+    const receive = (id: number) => {
+        setBusy('l' + id);
+        router.post(`/warehouse/inbound/${id}/receive`, {}, { preserveScroll: true, onFinish: () => setBusy(null) });
+    };
+    const receiveAll = (scheduleId: number) => {
+        setBusy('s' + scheduleId);
+        router.post(`/warehouse/schedules/${scheduleId}/receive-all`, {}, { preserveScroll: true, onFinish: () => setBusy(null) });
+    };
     const toggle = (item: PackItem) => router.post(`/warehouse/items/${item.id}/check`, { checked: !item.checked }, { preserveScroll: true, preserveState: true });
 
     return (
         <ErpLayout>
             <Head title="Gudang & Packing" />
-            <PageHeader title="Gudang & Packing" subtitle="Kerjakan dari kiri ke kanan: terima barang dari Mesir, lalu packing per pembeli." />
+            <PageHeader title="Gudang & Packing" subtitle="Kerjakan dari kiri ke kanan: centang kiriman dari Mesir, lalu packing per pembeli." />
 
-            <div className="mb-4">
+            <div className="mb-4 overflow-x-auto">
                 <Segmented
                     value={tab}
                     options={[
-                        { value: 'terima', label: `1. Barang dari Mesir (${inbound.length})` },
+                        { value: 'terima', label: `1. Dari Mesir (${inbound.length})` },
                         { value: 'packing', label: `2. Siap packing (${packCount})` },
                     ]}
                     onChange={setTab}
@@ -71,42 +104,45 @@ export default function Warehouse({ inbound, groups, packCount }: { inbound: Inb
             <ErrorBanner message={errors.finish || errors.line} />
 
             {tab === 'terima' &&
-                (inbound.length === 0 ? (
+                (bySchedule.length === 0 ? (
                     <div className="card py-14 text-center">
-                        <p className="font-medium">Tidak ada kiriman yang menunggu konfirmasi.</p>
+                        <p className="font-medium">Tidak ada kiriman yang menunggu dicentang.</p>
+                        <p className="text-ink-3 mt-1 text-sm">Kiriman muncul di sini begitu jadwal bagasinya berisi kitab dari Mesir.</p>
                     </div>
                 ) : (
-                    <div className="grid gap-5">
-                        {Object.entries(bySchedule).map(([schedule, lines]) => (
-                            <section key={schedule}>
-                                <div className="mb-2.5 flex items-center gap-2">
-                                    <Plane className="text-brand size-5" />
-                                    <h2 className="font-display text-lg font-semibold">Bagasi {schedule}</h2>
-                                    <span className="text-ink-3 text-sm">· {lines[0].carrier}</span>
-                                </div>
-                                <div className="grid gap-2.5 md:grid-cols-2">
-                                    {lines.map((l) => (
-                                        <article key={l.id} className="card flex gap-3.5 !p-3.5">
-                                            <Photo id={l.product_id} has={l.has_photo} cls="h-[92px] w-[68px]" />
-                                            <div className="flex min-w-0 flex-1 flex-col">
-                                                {l.title_ar && <span className="ar block text-left text-[17px]">{l.title_ar}</span>}
-                                                <span className="text-ink-2 text-[14px]">{l.title_latin}</span>
-                                                {l.maktabah && <span className="text-ink-3 text-[12.5px]">{l.maktabah}</span>}
-                                                <div className="mt-auto flex items-end gap-3 pt-2">
-                                                    <div>
-                                                        <span className="font-display num text-[26px] leading-none font-semibold">{l.qty}</span>
-                                                        <span className="text-ink-3 ml-1 text-sm">buah</span>
-                                                    </div>
-                                                    <Btn variant="primary" className="ml-auto !h-11" onClick={() => setConfirming(l)}>
-                                                        Konfirmasi diterima
-                                                    </Btn>
+                    <div className="grid gap-4">
+                        {bySchedule.map(([sid, s]) => {
+                            return (
+                                <section key={sid} className="card">
+                                    <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                                        <span className="bg-brand-soft text-brand grid size-9 place-items-center rounded-full">
+                                            <Plane className="size-[18px]" />
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="font-display text-lg leading-tight font-semibold">Bagasi {s.title}</h2>
+                                            <p className="text-ink-3 text-[13px]">{s.carrier}</p>
+                                        </div>
+                                        <Btn variant="primary" size="sm" disabled={busy === 's' + sid} onClick={() => receiveAll(sid)}>
+                                            <Check className="size-4" /> Centang semua
+                                        </Btn>
+                                    </div>
+                                    <ul className="grid gap-2">
+                                        {s.lines.map((l) => (
+                                            <li key={l.id} className="border-line flex items-center gap-3 rounded-xl border p-2.5">
+                                                <Box label={`Terima ${l.title_latin}`} busy={busy === 'l' + l.id || busy === 's' + sid} onClick={() => receive(l.id)} checked={false} />
+                                                <Photo id={l.product_id} has={l.has_photo} cls="h-14 w-10" />
+                                                <div className="min-w-0 flex-1">
+                                                    {l.title_ar && <span className="ar block text-left text-[16px]">{l.title_ar}</span>}
+                                                    <span className="text-ink-2 text-[13.5px]">{l.title_latin}</span>
+                                                    {l.maktabah && <span className="text-ink-3 block text-[12px]">{l.maktabah}</span>}
                                                 </div>
-                                            </div>
-                                        </article>
-                                    ))}
-                                </div>
-                            </section>
-                        ))}
+                                                <span className="font-display num text-lg font-semibold">×{l.qty}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            );
+                        })}
                     </div>
                 ))}
 
@@ -145,22 +181,15 @@ export default function Warehouse({ inbound, groups, packCount }: { inbound: Inb
                                                 </div>
                                                 <div className="grid gap-1.5">
                                                     {o.items.map((i) => (
-                                                        <button
-                                                            type="button"
-                                                            key={i.id}
-                                                            onClick={() => toggle(i)}
-                                                            className={'flex items-center gap-3 rounded-lg border p-2 text-left ' + (i.checked ? 'border-ok bg-ok-soft' : 'border-line hover:border-ink-3')}
-                                                        >
-                                                            <span className={'grid size-7 shrink-0 place-items-center rounded-md border-2 ' + (i.checked ? 'border-ok bg-ok text-white' : 'border-input')}>
-                                                                {i.checked && <Check className="size-4" />}
-                                                            </span>
+                                                        <div key={i.id} className={'flex items-center gap-3 rounded-lg border p-2 ' + (i.checked ? 'border-ok bg-ok-soft' : 'border-line')}>
+                                                            <Box label={`Packing ${i.title_latin}`} checked={i.checked} onClick={() => toggle(i)} />
                                                             <Photo id={i.product_id} has={i.has_photo} cls="h-11 w-8" />
                                                             <span className="min-w-0 flex-1">
                                                                 {i.title_ar && <span className="ar block text-left">{i.title_ar}</span>}
                                                                 <span className="text-ink-2 text-[13px]">{i.title_latin}</span>
                                                             </span>
                                                             <span className="font-display num text-lg font-semibold">×{i.qty}</span>
-                                                        </button>
+                                                        </div>
                                                     ))}
                                                 </div>
                                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -174,14 +203,14 @@ export default function Warehouse({ inbound, groups, packCount }: { inbound: Inb
                                                     <Btn
                                                         variant="primary"
                                                         className="ml-auto !h-11 !px-6"
-                                                        disabled={!all || !o.has_label || busy === o.id}
+                                                        disabled={!all || !o.has_label || busy === 'o' + o.id}
                                                         onClick={() => {
-                                                            setBusy(o.id);
+                                                            setBusy('o' + o.id);
                                                             router.post(`/warehouse/orders/${o.id}/finish`, {}, { preserveScroll: true, onFinish: () => setBusy(null) });
                                                         }}
                                                         title={!all ? 'Centang semua kitab dulu' : !o.has_label ? 'Resi belum ada' : ''}
                                                     >
-                                                        Selesai
+                                                        <Package className="size-4" /> Selesai
                                                     </Btn>
                                                 </div>
                                             </div>
@@ -192,28 +221,6 @@ export default function Warehouse({ inbound, groups, packCount }: { inbound: Inb
                         ))}
                     </div>
                 ))}
-
-            <Modal open={confirming !== null} onClose={() => setConfirming(null)} title="Barang sudah di tangan Anda?" description="Tandai hanya bila kitabnya benar-benar sudah Anda terima dan cocok dengan foto.">
-                {confirming && (
-                    <div className="grid gap-4">
-                        <div className="bg-soft flex items-center gap-3 rounded-xl p-3">
-                            <Photo id={confirming.product_id} has={confirming.has_photo} cls="h-16 w-12" />
-                            <div className="flex-1">
-                                {confirming.title_ar && <span className="ar block text-left">{confirming.title_ar}</span>}
-                                <span className="text-ink-2 text-sm">{confirming.title_latin}</span>
-                                <span className="text-ink-3 block text-[12.5px]">Bagasi {confirming.schedule}</span>
-                            </div>
-                            <span className="font-display num text-2xl font-semibold">×{confirming.qty}</span>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Btn onClick={() => setConfirming(null)}>Batal</Btn>
-                            <Btn variant="primary" onClick={() => router.post(`/warehouse/inbound/${confirming.id}/receive`, {}, { preserveScroll: true, onFinish: () => setConfirming(null) })}>
-                                Ya, sudah diterima
-                            </Btn>
-                        </div>
-                    </div>
-                )}
-            </Modal>
         </ErpLayout>
     );
 }

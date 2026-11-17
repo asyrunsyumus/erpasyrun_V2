@@ -50,7 +50,7 @@ class DashboardController extends Controller
             $tasks[] = [
                 'count' => (clone $waiting)->count(),
                 'title' => 'Pesanan menunggu jadwal bagasi',
-                'detail' => $oldest ? 'Yang paling lama sudah '.CarbonImmutable::parse($oldest)->diffInDays(now(), true).' hari' : 'Tidak ada yang menunggu',
+                'detail' => $oldest ? 'Yang paling lama sudah '.(int) CarbonImmutable::parse($oldest)->diffInDays(now()).' hari' : 'Tidak ada yang menunggu',
                 'action' => 'Buat jadwal',
                 'href' => '/baggage',
                 'urgent' => true,
@@ -121,6 +121,18 @@ class DashboardController extends Controller
                 'detail' => 'Laporan hitung fisik dari gudang',
                 'action' => 'Cocokkan',
                 'href' => '/stock',
+            ];
+        }
+
+        if ($role === Role::Owner) {
+            // Barang bagasi yang jadwalnya sudah berangkat tapi belum dikonfirmasi gudang.
+            $tasks[] = [
+                'count' => DB::table('inbound_lines as l')->join('baggage_schedules as s', 's.id', '=', 'l.baggage_schedule_id')
+                    ->whereNull('l.received_at')->where('s.depart_date', '<=', now()->toDateString())->count(),
+                'title' => 'Barang dari Mesir belum diterima gudang',
+                'detail' => 'Jadwal sudah berangkat, gudang belum mencentang',
+                'action' => 'Lihat',
+                'href' => '/baggage',
             ];
         }
 

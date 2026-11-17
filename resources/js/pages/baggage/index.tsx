@@ -153,6 +153,11 @@ export default function Baggage({ waiting, waitingGrams, schedules, today }: Pro
                 <div className="flex flex-wrap items-baseline gap-2">
                     <h3 className="text-base font-semibold">Menunggu jadwal bagasi ({waiting.length})</h3>
                     {waiting.length > 0 && <span className="text-ink-2 num text-sm">total {kg(waitingGrams)}</span>}
+                    {waiting.length > 0 && (
+                        <Btn size="sm" className="ml-auto" onClick={() => router.post('/baggage/match', {}, { preserveScroll: true })}>
+                            Cocokkan ke jadwal terdekat
+                        </Btn>
+                    )}
                 </div>
                 {waiting.length === 0 ? (
                     <p className="text-ink-3 mt-1 text-sm">Tidak ada pesanan yang menunggu.</p>
