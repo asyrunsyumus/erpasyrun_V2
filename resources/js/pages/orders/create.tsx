@@ -19,12 +19,14 @@ interface ProductOpt {
     title_latin: string;
     title_ar: string | null;
     has_photo: boolean;
-    weight_grams: number;
+    weight_grams: number | null;
     price: number;
     stock: number;
 }
 interface Line extends ProductOpt {
     qty: number;
+    /** Berat yang diisi di form ini untuk kitab yang belum punya berat di master. */
+    weight_input: number | '';
 }
 
 function useLookup<T>(url: string, q: string, extra = '') {
@@ -131,7 +133,10 @@ export default function CreateOrder() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customer?.id]);
 
-    const add = (p: ProductOpt) => setLines((ls) => (ls.some((l) => l.id === p.id) ? ls.map((l) => (l.id === p.id ? { ...l, qty: l.qty + 1 } : l)) : [...ls, { ...p, qty: 1 }]));
+    const add = (p: ProductOpt) => setLines((ls) => (ls.some((l) => l.id === p.id) ? ls.map((l) => (l.id === p.id ? { ...l, qty: l.qty + 1 } : l)) : [...ls, { ...p, qty: 1, weight_input: '' }]));
+    const setWeight = (id: number, w: number | '') => setLines((ls) => ls.map((l) => (l.id === id ? { ...l, weight_input: w } : l)));
+    const weightOf = (l: Line) => l.weight_grams ?? Number(l.weight_input || 0);
+    const missingWeight = lines.filter((l) => l.weight_grams === null && !l.weight_input);
     const setQty = (id: number, qty: number) => setLines((ls) => ls.map((l) => (l.id === id ? { ...l, qty: Math.max(1, qty) } : l)));
 
     const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
@@ -139,12 +144,12 @@ export default function CreateOrder() {
     const total = subtotal - discount + Number(form.data.shipping_fee || 0);
     const fromStock = lines.reduce((s, l) => s + Math.min(l.qty, l.stock), 0);
     const toBuy = lines.reduce((s, l) => s + Math.max(0, l.qty - l.stock), 0);
-    const buyGrams = lines.reduce((s, l) => s + Math.max(0, l.qty - l.stock) * l.weight_grams, 0);
+    const buyGrams = lines.reduce((s, l) => s + Math.max(0, l.qty - l.stock) * weightOf(l), 0);
     const missingPrice = lines.filter((l) => l.price <= 0);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.transform((d) => ({ ...d, payment_status: d.channel === 'shopee' ? null : d.payment_status, items: lines.map((l) => ({ product_id: l.id, qty: l.qty })) }));
+        form.transform((d) => ({ ...d, payment_status: d.channel === 'shopee' ? null : d.payment_status, items: lines.map((l) => ({ product_id: l.id, qty: l.qty, weight_grams: l.weight_grams === null ? l.weight_input || null : null })) }));
         form.post('/orders');
     };
 
@@ -259,7 +264,24 @@ export default function CreateOrder() {
                                                 <div className="mt-1 flex flex-wrap gap-1.5 text-[12px]">
                                                     {take > 0 && <span className="bg-ok-soft text-ok rounded-md px-2 py-0.5">{take} dari gudang</span>}
                                                     {buy > 0 && <span className="bg-gold-soft text-gold-ink rounded-md px-2 py-0.5">{buy} dibeli di Mesir</span>}
+                                                    {l.weight_grams !== null && <span className="text-ink-3 px-1 py-0.5">{l.weight_grams} g</span>}
                                                 </div>
+                                                {l.weight_grams === null && (
+                                                    <label className={'mt-2 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[13px] ' + (l.weight_input ? 'border-line' : 'border-warn bg-warn-soft')}>
+                                                        <span className={l.weight_input ? 'text-ink-2' : 'text-warn font-medium'}>Berat belum ada — isi:</span>
+                                                        <input
+                                                            className="bg-surface border-input num h-8 w-20 rounded-md border px-2 text-right outline-none"
+                                                            inputMode="numeric"
+                                                            placeholder="gram"
+                                                            value={l.weight_input}
+                                                            onChange={(e) => {
+                                                                const d = e.target.value.replace(/\D/g, '');
+                                                                setWeight(l.id, d === '' ? '' : Number(d));
+                                                            }}
+                                                        />
+                                                        <span className="text-ink-3">gram · tersimpan ke data kitab</span>
+                                                    </label>
+                                                )}
                                             </div>
                                             <div className="border-line flex items-center rounded-[10px] border">
                                                 <button type="button" className="hover:bg-soft grid size-10 place-items-center rounded-l-[10px]" onClick={() => setQty(l.id, l.qty - 1)} aria-label="Kurangi">
@@ -288,6 +310,7 @@ export default function CreateOrder() {
                             </div>
                         )}
                         {missingPrice.length > 0 && <p className="text-bad mt-3 text-[13px]">Ada kitab yang harganya belum diisi Owner. Hapus dari order atau minta Owner mengisi harganya dulu.</p>}
+                        {missingWeight.length > 0 && <p className="text-warn mt-3 text-[13px]">Isi berat kitab yang ditandai kuning dulu. Cukup sekali — berikutnya terisi otomatis.</p>}
                         {itemError && <p className="text-bad mt-3 text-[13px]">{itemError}</p>}
                     </section>
 
@@ -361,7 +384,7 @@ export default function CreateOrder() {
                         <Field label="Catatan (opsional)" className="mt-4">
                             <textarea className={inputCls + ' h-16 py-2'} value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} />
                         </Field>
-                        <Btn variant="primary" className="mt-4 w-full" disabled={form.processing || !customer || lines.length === 0 || missingPrice.length > 0 || (form.data.channel === 'whatsapp' && !form.data.payment_status)}>
+                        <Btn variant="primary" className="mt-4 w-full" disabled={form.processing || !customer || lines.length === 0 || missingPrice.length > 0 || missingWeight.length > 0 || (form.data.channel === 'whatsapp' && !form.data.payment_status)}>
                             {form.processing ? 'Menyimpan…' : 'Simpan order'}
                         </Btn>
                         {form.data.payment_status === 'paid' && form.data.channel === 'whatsapp' && <p className="text-warn mt-2 text-center text-[12.5px]">Pilih “Lunas” hanya bila uangnya sudah benar-benar masuk.</p>}

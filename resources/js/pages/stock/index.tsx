@@ -12,7 +12,7 @@ interface Row {
     author: string | null;
     publisher: string | null;
     category: string | null;
-    weight_grams: number;
+    weight_grams: number | null;
     has_photo: boolean;
     qty: number;
 }
@@ -156,7 +156,7 @@ export default function Stock({ items, filters, counts, canReport, canDecide, to
                             </div>
                         </td>
                         <td className="text-ink-2">{r.category ?? '—'}</td>
-                        <td className="text-right">{r.weight_grams} g</td>
+                        <td className="text-right">{r.weight_grams ? `${r.weight_grams} g` : <span className="text-ink-3">—</span>}</td>
                         <td className={'font-display text-right text-lg font-semibold ' + (r.qty < 0 ? 'text-bad' : r.qty === 0 ? 'text-ink-3' : '')}>{r.qty}</td>
                         {canReport && (
                             <td className="text-right">

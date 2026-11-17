@@ -81,7 +81,7 @@ class ProductController extends Controller
             'author' => ['nullable', 'string', 'max:255'],
             'publisher' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:80'],
-            'weight_grams' => ['required', 'integer', 'min:1', 'max:50000'],
+            'weight_grams' => ['nullable', 'integer', 'min:1', 'max:50000'],
             'primary_maktabah_id' => ['nullable', 'integer', Rule::exists('maktabahs', 'id')->whereNull('deleted_at')],
             'alt_maktabah_ids' => ['array'],
             'alt_maktabah_ids.*' => ['integer', Rule::exists('maktabahs', 'id')->whereNull('deleted_at')],
@@ -102,8 +102,7 @@ class ProductController extends Controller
     private function save(Request $request, Product $product): Product
     {
         $data = $request->validate($this->rules($request, $product), [
-            'weight_grams.required' => 'Berat wajib diisi — dipakai untuk menghitung kuota bagasi.',
-            'weight_grams.min' => 'Berat harus lebih dari 0 gram.',
+            'weight_grams.min' => 'Berat harus lebih dari 0 gram, atau kosongkan bila belum tahu.',
         ]);
 
         $allowed = $request->user()->isOwner() ? [...Product::INFO_FIELDS, ...Product::PRICE_FIELDS] : Product::INFO_FIELDS;

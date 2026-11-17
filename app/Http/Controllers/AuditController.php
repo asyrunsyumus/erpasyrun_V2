@@ -15,6 +15,7 @@ class AuditController extends Controller
         'product.price' => 'Mengubah harga kitab',
         'product.price_egp_from_purchase' => 'Harga EGP diperbarui dari belanja Mesir',
         'product.delete' => 'Menghapus kitab',
+        'product.weight_from_order' => 'Berat kitab diisi dari form order',
         'customer.update' => 'Mengubah tipe customer',
         'customer.delete' => 'Menghapus customer',
         'maktabah.create' => 'Menambah maktabah',

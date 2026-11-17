@@ -14,7 +14,7 @@ interface Product {
     publisher: string | null;
     category_id: number | null;
     category: string | null;
-    weight_grams: number;
+    weight_grams: number | null;
     primary_maktabah_id: number | null;
     primary_maktabah: string | null;
     alt_maktabah_ids: number[];
@@ -133,7 +133,7 @@ export default function Products({ items, filters, isOwner, categories, maktabah
                 author: p.author ?? '',
                 publisher: p.publisher ?? '',
                 category: p.category ?? '',
-                weight_grams: p.weight_grams,
+                weight_grams: p.weight_grams ?? '',
                 primary_maktabah_id: p.primary_maktabah_id ?? '',
                 alt_maktabah_ids: p.alt_maktabah_ids,
                 is_active: p.is_active,
@@ -214,7 +214,7 @@ export default function Products({ items, filters, isOwner, categories, maktabah
                             </div>
                         </td>
                         <td className="text-ink-2">{p.primary_maktabah || '—'}</td>
-                        <td className="text-right">{p.weight_grams} g</td>
+                        <td className="text-right">{p.weight_grams ? `${p.weight_grams} g` : <span className="text-warn text-[13px]">belum diisi</span>}</td>
                         <td className={'text-right ' + (p.stock > 0 ? '' : 'text-ink-3')}>{p.stock}</td>
                         <td className="text-right">{p.price_regular ? rupiah(p.price_regular) : <span className="text-warn text-[13px]">belum diisi</span>}</td>
                         <td className="text-right">{p.price_reseller ? rupiah(p.price_reseller) : <span className="text-warn text-[13px]">belum diisi</span>}</td>
@@ -284,11 +284,11 @@ export default function Products({ items, filters, isOwner, categories, maktabah
                                 ))}
                             </datalist>
                         </Field>
-                        <Field label="Berat (gram)" error={form.errors.weight_grams} hint="Wajib — dipakai untuk kuota bagasi.">
+                        <Field label="Berat (gram)" error={form.errors.weight_grams} hint="Boleh kosong bila belum tahu — nanti diminta saat kitab ini pertama kali dipesan.">
                             <input
                                 className={inputCls + ' num'}
                                 inputMode="numeric"
-                                required
+                                placeholder="belum diketahui"
                                 value={form.data.weight_grams}
                                 onChange={(e) => form.setData('weight_grams', e.target.value.replace(/\D/g, '') === '' ? '' : Number(e.target.value.replace(/\D/g, '')))}
                             />

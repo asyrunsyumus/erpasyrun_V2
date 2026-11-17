@@ -159,9 +159,11 @@ class MasterDataTest extends TestCase
 
         $this->assertDatabaseCount('products', 0); // pratinjau belum menyimpan
 
+        // Kitab tanpa berat kini sah (berat diisi saat pertama dipesan); maktabah tak dikenal tetap ditolak.
         $this->actingAs($owner)->get("/imports/{$id}")->assertInertia(fn (Assert $p) => $p
-            ->where('import.rows_ok', 1)->where('import.rows_failed', 2)
-            ->where('rows.1.errors.0', 'berat_gram kosong (wajib untuk kuota bagasi)'));
+            ->where('import.rows_ok', 2)->where('import.rows_failed', 1)
+            ->where('rows.1.errors', [])
+            ->where('rows.2.errors.0', 'maktabah "Toko Hantu" belum terdaftar — tambahkan dulu di menu Maktabah'));
 
         $this->actingAs($owner)->post("/imports/{$id}/confirm")->assertRedirect('/products');
 
@@ -171,7 +173,8 @@ class MasterDataTest extends TestCase
         $this->assertSame(150000, $p->price_regular);
         $this->assertSame(7, (int) DB::table('product_stock')->where('product_id', $p->id)->value('qty'));
         $this->assertSame(1, DB::table('stock_movements')->where('type', 'import_awal')->count());
-        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseCount('products', 2);
+        $this->assertNull(Product::firstWhere('title_latin', 'Tanpa Berat')->weight_grams);
 
         // Konfirmasi dua kali ditolak
         $this->actingAs($owner)->post("/imports/{$id}/confirm")->assertStatus(409);

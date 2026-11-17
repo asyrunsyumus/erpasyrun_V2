@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\PurchaseNeed;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -31,13 +32,29 @@ class OrderService
 
             // Gabungkan baris kitab yang sama.
             $lines = [];
+            $weights = [];
             foreach ($data['items'] as $it) {
                 $lines[$it['product_id']] = ($lines[$it['product_id']] ?? 0) + (int) $it['qty'];
+                if (! empty($it['weight_grams'])) {
+                    $weights[$it['product_id']] = (int) $it['weight_grams'];
+                }
             }
 
-            $products = Product::whereIn('id', array_keys($lines))->where('is_active', true)->get()->keyBy('id');
+            $products = Product::whereIn('id', array_keys($lines))->where('is_active', true)->lockForUpdate()->get()->keyBy('id');
             if ($products->count() !== count($lines)) {
                 throw ValidationException::withMessages(['items' => 'Ada kitab yang tidak ditemukan atau sudah nonaktif.']);
+            }
+
+            // Berat belum ada di master → wajib diisi di form order, lalu tersimpan ke master produk.
+            foreach ($products as $p) {
+                if ($p->weight_grams === null) {
+                    if (empty($weights[$p->id])) {
+                        throw ValidationException::withMessages(['items' => "Isi berat \"{$p->title_latin}\" dulu — dipakai untuk kuota bagasi."]);
+                    }
+                    $p->weight_grams = $weights[$p->id];
+                    $p->save();
+                    Audit::log('product.weight_from_order', $p, ['weight_grams' => null], ['weight_grams' => $p->weight_grams]);
+                }
             }
 
             $subtotal = 0;

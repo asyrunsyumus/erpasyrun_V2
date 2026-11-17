@@ -112,6 +112,8 @@ class OrderController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:10000'],
+            // Untuk kitab yang beratnya belum ada di master: diisi di form order, lalu disimpan ke master.
+            'items.*.weight_grams' => ['nullable', 'integer', 'min:1', 'max:50000'],
         ], [
             'customer_id.required' => 'Pilih pembeli dulu.',
             'items.required' => 'Tambahkan minimal satu kitab.',

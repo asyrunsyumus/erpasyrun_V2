@@ -25,7 +25,7 @@ class MasterImport
 
     /** Kolom template per jenis. Kolom bertanda * wajib. */
     public const COLUMNS = [
-        'products' => ['sku', 'judul_latin*', 'judul_arab', 'penulis', 'penerbit', 'kategori', 'berat_gram*', 'maktabah_utama', 'harga_egp', 'harga_reguler', 'harga_reseller', 'stok_awal'],
+        'products' => ['sku', 'judul_latin*', 'judul_arab', 'penulis', 'penerbit', 'kategori', 'berat_gram', 'maktabah_utama', 'harga_egp', 'harga_reguler', 'harga_reseller', 'stok_awal'],
         'customers' => ['kode', 'nama*', 'telepon', 'alamat', 'kota', 'tipe'],
         'maktabahs' => ['nama*', 'area', 'telepon', 'catatan'],
     ];
@@ -133,14 +133,13 @@ class MasterImport
 
         $v = Validator::make($d, [
             'title_latin' => ['required', 'max:255'],
-            'weight_grams' => ['required', 'integer', 'min:1', 'max:50000'],
+            'weight_grams' => ['nullable', 'integer', 'min:1', 'max:50000'],
             'price_regular' => ['nullable', 'integer', 'min:0'],
             'price_reseller' => ['nullable', 'integer', 'min:0'],
             'initial_stock' => ['nullable', 'integer', 'min:0', 'max:100000'],
         ], [
             'title_latin.required' => 'judul_latin kosong',
-            'weight_grams.required' => 'berat_gram kosong (wajib untuk kuota bagasi)',
-            'weight_grams.min' => 'berat_gram harus lebih dari 0',
+            'weight_grams.min' => 'berat_gram harus lebih dari 0 (atau kosongkan)',
             'weight_grams.integer' => 'berat_gram harus angka',
         ]);
         $errors = $v->errors()->all();

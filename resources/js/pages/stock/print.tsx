@@ -7,7 +7,7 @@ interface Row {
     title_ar: string | null;
     author: string | null;
     publisher: string | null;
-    weight_grams: number;
+    weight_grams: number | null;
     category: string | null;
     qty: number;
 }
@@ -30,7 +30,7 @@ export default function StockPrint({ rows, cols, printedAt }: { rows: Row[]; col
             case 'kategori':
                 return r.category;
             case 'berat':
-                return `${r.weight_grams} g`;
+                return r.weight_grams ? `${r.weight_grams} g` : '—';
             case 'qty':
                 return <b>{r.qty}</b>;
             case 'hitung':
