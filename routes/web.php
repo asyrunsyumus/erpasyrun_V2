@@ -10,6 +10,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\StockController;
+use App\Http\Controllers\WarehouseController;
 use App\Support\Navigation;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -90,11 +92,27 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('baggage/{schedule}', [BaggageController::class, 'destroy'])->whereNumber('schedule')->name('baggage.destroy');
     });
 
+    // ---------- Gudang & Packing: HANYA Tim Gudang (Owner pun tidak, sesuai PRD) ----------
+    Route::middleware('role:gudang')->group(function () {
+        Route::get('warehouse', [WarehouseController::class, 'index'])->name('warehouse.index');
+        Route::post('warehouse/inbound/{line}/receive', [WarehouseController::class, 'receive'])->whereNumber('line')->name('warehouse.receive');
+        Route::post('warehouse/items/{item}/check', [WarehouseController::class, 'check'])->whereNumber('item')->name('warehouse.check');
+        Route::post('warehouse/orders/{order}/finish', [WarehouseController::class, 'finish'])->whereNumber('order')->name('warehouse.finish');
+    });
+
+    // ---------- Stok Ready: lihat (Owner, Admin, Gudang); lapor selisih (Gudang, Owner); putuskan (Owner) ----------
+    Route::middleware(Navigation::roles('stock'))->group(function () {
+        Route::get('stock', [StockController::class, 'index'])->name('stock.index');
+        Route::get('stock/print', [StockController::class, 'print'])->name('stock.print');
+    });
+    Route::post('stock/counts', [StockController::class, 'report'])->middleware('role:owner,gudang')->name('stock.report');
+    Route::post('stock/counts/{count}/decide', [StockController::class, 'decide'])->whereNumber('count')->middleware('role:owner')->name('stock.decide');
+
     // Resi: Owner, Admin, dan Gudang (mencetak saat packing).
     Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
 
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'stock'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;
