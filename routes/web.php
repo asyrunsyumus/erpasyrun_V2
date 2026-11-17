@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BaggageController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
@@ -81,13 +82,19 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:owner')->group(function () {
         Route::put('purchases/{purchase}', [PurchaseController::class, 'update'])->whereNumber('purchase')->name('purchases.update');
         Route::post('purchases/rate', [PurchaseController::class, 'setRate'])->name('purchases.rate');
+
+        Route::get('baggage', [BaggageController::class, 'index'])->name('baggage.index');
+        Route::post('baggage', [BaggageController::class, 'store'])->name('baggage.store');
+        Route::put('baggage/{schedule}', [BaggageController::class, 'update'])->whereNumber('schedule')->name('baggage.update');
+        Route::post('baggage/{schedule}/move', [BaggageController::class, 'move'])->whereNumber('schedule')->name('baggage.move');
+        Route::delete('baggage/{schedule}', [BaggageController::class, 'destroy'])->whereNumber('schedule')->name('baggage.destroy');
     });
 
     // Resi: Owner, Admin, dan Gudang (mencetak saat packing).
     Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
 
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;

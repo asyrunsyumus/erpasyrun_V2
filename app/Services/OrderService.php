@@ -114,6 +114,9 @@ class OrderService
             $order->save();
             $this->history($order, null, $status, $user, $note);
 
+            // Bagian dari stok sudah diketahui modalnya; pesanan full-gudang langsung punya HPP final.
+            app(CostCalculator::class)->recomputeOrder($order->id);
+
             return $order;
         });
     }
