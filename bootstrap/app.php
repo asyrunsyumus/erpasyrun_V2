@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CanonicalHost;
 use App\Http\Middleware\EnsureAccountUsable;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -16,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(prepend: [
+            CanonicalHost::class,
+        ]);
+
         $middleware->web(append: [
             SecurityHeaders::class,
             EnsureAccountUsable::class,
