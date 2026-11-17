@@ -7,6 +7,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MaktabahController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SetupController;
 use App\Support\Navigation;
 use Illuminate\Support\Facades\Route;
@@ -71,11 +72,22 @@ Route::middleware(['auth'])->group(function () {
     // Foto kitab: semua peran yang login boleh melihat (Tim Mesir & Gudang mencocokkan fisik kitab).
     Route::get('products/{product}/photo', [ProductController::class, 'photo'])->name('products.photo');
 
+    // ---------- Belanja Mesir: Tim Mesir + Owner; koreksi & kurs default hanya Owner ----------
+    Route::middleware(Navigation::roles('purchases'))->group(function () {
+        Route::get('purchases', [PurchaseController::class, 'index'])->name('purchases.index');
+        Route::get('purchases/print', [PurchaseController::class, 'print'])->name('purchases.print');
+        Route::post('purchases', [PurchaseController::class, 'store'])->middleware('throttle:60,1')->name('purchases.store');
+    });
+    Route::middleware('role:owner')->group(function () {
+        Route::put('purchases/{purchase}', [PurchaseController::class, 'update'])->whereNumber('purchase')->name('purchases.update');
+        Route::post('purchases/rate', [PurchaseController::class, 'setRate'])->name('purchases.rate');
+    });
+
     // Resi: Owner, Admin, dan Gudang (mencetak saat packing).
     Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
 
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;
