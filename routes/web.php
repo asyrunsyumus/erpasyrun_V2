@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\BaggageController;
+use App\Http\Controllers\CancellationController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\ImportController;
@@ -108,11 +111,35 @@ Route::middleware(['auth'])->group(function () {
     Route::post('stock/counts', [StockController::class, 'report'])->middleware('role:owner,gudang')->name('stock.report');
     Route::post('stock/counts/{count}/decide', [StockController::class, 'decide'])->whereNumber('count')->middleware('role:owner')->name('stock.decide');
 
+    // ---------- Pembatalan: Owner & Admin ----------
+    Route::middleware('role:owner,admin')->group(function () {
+        Route::get('cancellations', [CancellationController::class, 'index'])->name('cancellations.index');
+        Route::post('orders/{order}/cancel', [CancellationController::class, 'store'])->name('cancellations.store');
+        Route::post('cancellations/{cancellation}/approve', [CancellationController::class, 'approve'])->whereNumber('cancellation')->name('cancellations.approve');
+        Route::post('cancellations/{cancellation}/reject', [CancellationController::class, 'reject'])->whereNumber('cancellation')->name('cancellations.reject');
+        Route::get('cancellations/{cancellation}/proof', [CancellationController::class, 'proof'])->whereNumber('cancellation')->name('cancellations.proof');
+    });
+
+    // ---------- Pengguna: hanya Owner ----------
+    Route::middleware('role:owner')->group(function () {
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->middleware('throttle:10,1')->name('users.reset');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('throttle:10,1')->name('users.destroy');
+    });
+
+    // ---------- Notifikasi (setiap orang miliknya sendiri) ----------
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{id}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+
     // Resi: Owner, Admin, dan Gudang (mencetak saat packing).
     Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
 
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'stock'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'stock', 'cancellations', 'users'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;

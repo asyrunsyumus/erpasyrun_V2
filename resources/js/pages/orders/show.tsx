@@ -44,7 +44,7 @@ interface Props {
     };
     steps: { key: string; label: string; state: 'done' | 'now' | 'todo' | 'skipped' }[];
     cost: { cogs: number; profit: number; margin: number } | null;
-    can: { mark_paid: boolean; upload_label: boolean };
+    can: { mark_paid: boolean; upload_label: boolean; cancel: boolean };
 }
 
 function today() {
@@ -54,7 +54,9 @@ function today() {
 
 export default function OrderShow({ order, steps, cost, can }: Props) {
     const [payOpen, setPayOpen] = useState(false);
+    const [cancelOpen, setCancelOpen] = useState(false);
     const pay = useForm({ paid_at: today() });
+    const cancel = useForm({ reason: '' });
     const label = useForm<{ file: File | null }>({ file: null });
     const qty = order.items.reduce((s, i) => s + i.qty, 0);
 
@@ -282,6 +284,12 @@ export default function OrderShow({ order, steps, cost, can }: Props) {
                         <p className="text-ink-3 mt-1 text-sm">{[order.customer.address, order.customer.city].filter(Boolean).join(', ') || 'Alamat belum diisi di data customer.'}</p>
                     </section>
 
+                    {can.cancel && (
+                        <button type="button" onClick={() => setCancelOpen(true)} className="border-line text-bad hover:border-bad h-[42px] rounded-[10px] border bg-[var(--surface)] font-medium">
+                            Ajukan pembatalan
+                        </button>
+                    )}
+
                     {cost && (
                         <section className="card !bg-soft num">
                             <div className="mb-2 flex items-baseline gap-2">
@@ -302,6 +310,28 @@ export default function OrderShow({ order, steps, cost, can }: Props) {
                     )}
                 </div>
             </div>
+
+            <Modal open={cancelOpen} onClose={() => setCancelOpen(false)} title="Ajukan pembatalan?" description="Pesanan berhenti di tahap ini sampai diputuskan di menu Pembatalan. Bila ditolak, pesanan kembali berjalan dan boleh diajukan lagi.">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        cancel.post(`/orders/${order.id}/cancel`, { preserveScroll: true, onSuccess: () => setCancelOpen(false) });
+                    }}
+                    className="grid gap-4"
+                >
+                    <Field label="Alasan" error={cancel.errors.reason}>
+                        <textarea className={inputCls + ' h-24 py-2'} value={cancel.data.reason} onChange={(e) => cancel.setData('reason', e.target.value)} required placeholder="mis. pembeli membatalkan karena dobel pesan" />
+                    </Field>
+                    <div className="flex justify-end gap-2">
+                        <Btn type="button" onClick={() => setCancelOpen(false)}>
+                            Batal
+                        </Btn>
+                        <Btn variant="primary" className="!bg-bad" disabled={cancel.processing}>
+                            Ajukan
+                        </Btn>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal open={payOpen} onClose={() => setPayOpen(false)} title="Tandai lunas?" description="Lakukan hanya bila uangnya sudah benar-benar masuk. Langkah ini tidak bisa dibatalkan.">
                 <form

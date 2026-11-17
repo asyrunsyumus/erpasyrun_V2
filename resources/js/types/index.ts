@@ -29,6 +29,7 @@ export interface SharedData {
     name: string;
     auth: Auth;
     nav: NavEntry[];
-    flash: { success?: string | null; status?: string | null };
+    flash: { success?: string | null; status?: string | null; temp_password?: { name: string; email: string; password: string } | null };
+    unread: number;
     [key: string]: unknown;
 }

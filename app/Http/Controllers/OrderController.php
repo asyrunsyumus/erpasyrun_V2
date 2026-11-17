@@ -194,6 +194,7 @@ class OrderController extends Controller
             'can' => [
                 'mark_paid' => $order->payment_status !== 'paid' && ! in_array($current, [OrderStatus::Dibatalkan, OrderStatus::MenungguPembatalan], true),
                 'upload_label' => ! in_array($current, [OrderStatus::Selesai, OrderStatus::Dibatalkan], true),
+                'cancel' => ! in_array($current, [OrderStatus::Selesai, OrderStatus::Dibatalkan, OrderStatus::MenungguPembatalan], true),
             ],
         ]);
     }

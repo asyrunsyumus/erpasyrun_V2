@@ -40,7 +40,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'status' => fn () => $request->session()->get('status'),
+                'temp_password' => fn () => $request->session()->get('temp_password'),
             ],
+            'unread' => fn () => $user ? $user->unreadNotifications()->count() : 0,
         ];
     }
 }
