@@ -47,7 +47,7 @@ class RevisionBatchTest extends TestCase
         return $order->id;
     }
 
-    public function test_packing_check_cannot_be_unchecked()
+    public function test_gudang_can_uncheck_packing_item()
     {
         $orderId = $this->packingOrder();
         $item = DB::table('order_items')->where('order_id', $orderId)->value('id');
@@ -55,8 +55,8 @@ class RevisionBatchTest extends TestCase
         $this->actingAs($this->gudang)->post("/warehouse/items/{$item}/check", ['checked' => true])->assertSessionHasNoErrors();
         $this->assertSame(1, DB::table('packing_checks')->where('order_item_id', $item)->count());
 
-        $this->actingAs($this->gudang)->post("/warehouse/items/{$item}/check", ['checked' => false])->assertSessionHasErrors('line');
-        $this->assertSame(1, DB::table('packing_checks')->where('order_item_id', $item)->count());
+        $this->actingAs($this->gudang)->post("/warehouse/items/{$item}/check", ['checked' => false])->assertSessionHasNoErrors();
+        $this->assertSame(0, DB::table('packing_checks')->where('order_item_id', $item)->count());
     }
 
     public function test_owner_sees_warehouse_progress_and_gudang_does_not()

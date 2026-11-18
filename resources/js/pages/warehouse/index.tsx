@@ -47,7 +47,7 @@ function Box({ checked, busy, onClick, label }: { checked: boolean; busy?: boole
         <button
             type="button"
             onClick={onClick}
-            disabled={checked || busy || !onClick}
+            disabled={busy || !onClick}
             aria-label={label}
             className={
                 'grid size-8 shrink-0 place-items-center rounded-lg border-2 transition duration-150 ' +
@@ -97,11 +97,7 @@ export default function Warehouse({ inbound, arrivals, groups, packCount }: { in
         setBusy('s' + scheduleId);
         router.post(`/warehouse/schedules/${scheduleId}/receive-all`, {}, { preserveScroll: true, onFinish: () => setBusy(null) });
     };
-    // Centang packing hanya bisa ditambah, tidak bisa dibatalkan.
-    const toggle = (item: PackItem) => {
-        if (item.checked) return;
-        router.post(`/warehouse/items/${item.id}/check`, { checked: true }, { preserveScroll: true, preserveState: true });
-    };
+    const toggle = (item: PackItem) => router.post(`/warehouse/items/${item.id}/check`, { checked: !item.checked }, { preserveScroll: true, preserveState: true });
 
     return (
         <ErpLayout>

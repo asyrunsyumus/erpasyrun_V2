@@ -37,8 +37,9 @@ class WarehouseProgressController extends Controller
                 'received' => (int) $r->received,
             ]);
 
+        // Alias jangan memakai kata "lines" — itu kata yang dipesan di MariaDB.
         $arrivals = DB::table('purchase_arrivals')->whereNull('received_at')
-            ->selectRaw('COUNT(*) as lines, COALESCE(SUM(qty),0) as qty')->first();
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(qty),0) as qty_total')->first();
 
         // Pesanan yang sedang dipacking, dengan progres centang.
         $packingRows = DB::table('orders as o')->join('customers as c', 'c.id', '=', 'o.customer_id')
@@ -78,7 +79,7 @@ class WarehouseProgressController extends Controller
 
         return Inertia::render('warehouse/progress', [
             'schedules' => $schedules,
-            'arrivals' => ['lines' => (int) $arrivals->lines, 'qty' => (int) $arrivals->qty],
+            'arrivals' => ['lines' => (int) $arrivals->cnt, 'qty' => (int) $arrivals->qty_total],
             'packing' => $packing,
             'doneToday' => $doneToday,
             'activity' => $activity,
