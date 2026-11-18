@@ -97,7 +97,11 @@ export default function Warehouse({ inbound, arrivals, groups, packCount }: { in
         setBusy('s' + scheduleId);
         router.post(`/warehouse/schedules/${scheduleId}/receive-all`, {}, { preserveScroll: true, onFinish: () => setBusy(null) });
     };
-    const toggle = (item: PackItem) => router.post(`/warehouse/items/${item.id}/check`, { checked: !item.checked }, { preserveScroll: true, preserveState: true });
+    // Centang packing hanya bisa ditambah, tidak bisa dibatalkan.
+    const toggle = (item: PackItem) => {
+        if (item.checked) return;
+        router.post(`/warehouse/items/${item.id}/check`, { checked: true }, { preserveScroll: true, preserveState: true });
+    };
 
     return (
         <ErpLayout>

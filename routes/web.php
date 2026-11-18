@@ -20,6 +20,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\WarehouseProgressController;
 use App\Support\Navigation;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -101,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('baggage/{schedule}', [BaggageController::class, 'update'])->whereNumber('schedule')->name('baggage.update');
         Route::post('baggage/{schedule}/move', [BaggageController::class, 'move'])->whereNumber('schedule')->name('baggage.move');
         Route::delete('baggage/{schedule}', [BaggageController::class, 'destroy'])->whereNumber('schedule')->name('baggage.destroy');
+        Route::get('warehouse-progress', [WarehouseProgressController::class, 'index'])->name('warehouse.progress');
     });
 
     // ---------- Gudang & Packing: HANYA Tim Gudang (Owner pun tidak, sesuai PRD) ----------
@@ -164,7 +166,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('orders/{order}/label', [OrderController::class, 'label'])->middleware('role:owner,admin,gudang')->name('orders.label');
 
     // Modul yang belum dibangun: tetap dilindungi izin peran, menampilkan halaman "sedang disiapkan".
-    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'stock', 'cancellations', 'users', 'reports', 'expenses', 'audit', 'shop'];
+    $built = ['dashboard', 'maktabahs', 'customers', 'products', 'orders', 'purchases', 'baggage', 'warehouse', 'warehouse_progress', 'stock', 'cancellations', 'users', 'reports', 'expenses', 'audit', 'shop'];
     foreach (Navigation::modules() as $key => $module) {
         if (in_array($key, $built, true)) {
             continue;

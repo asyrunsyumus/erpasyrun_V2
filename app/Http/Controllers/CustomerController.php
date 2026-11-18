@@ -19,7 +19,8 @@ class CustomerController extends Controller
 
         $items = Customer::query()
             ->when($q !== '', fn ($w) => $w->where(fn ($x) => $x->where('name', 'like', "%{$q}%")
-                ->orWhere('phone', 'like', "%{$q}%")->orWhere('city', 'like', "%{$q}%")->orWhere('code', $q)))
+                ->orWhere('phone', 'like', "%{$q}%")->orWhere('city', 'like', "%{$q}%")
+                ->orWhere('kecamatan', 'like', "%{$q}%")->orWhere('kelurahan', 'like', "%{$q}%")->orWhere('code', $q)))
             ->when(in_array($type, ['reguler', 'reseller'], true), fn ($w) => $w->where('type', $type))
             ->orderBy('name')
             ->paginate(25)
@@ -39,6 +40,9 @@ class CustomerController extends Controller
             'phone' => ['nullable', 'string', 'max:40'],
             'address' => ['nullable', 'string', 'max:1000'],
             'city' => ['nullable', 'string', 'max:120'],
+            'kelurahan' => ['nullable', 'string', 'max:120'],
+            'kecamatan' => ['nullable', 'string', 'max:120'],
+            'kode_pos' => ['nullable', 'string', 'max:10'],
             'type' => ['required', Rule::in(['reguler', 'reseller'])],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
@@ -54,7 +58,7 @@ class CustomerController extends Controller
     public function update(Request $request, Customer $customer): RedirectResponse
     {
         $customer->update($request->validate($this->rules()));
-        Audit::changes('customer.update', $customer, ['type']);
+        Audit::changes('customer.update', $customer, ['type', 'kelurahan', 'kecamatan', 'kode_pos']);
 
         return back()->with('success', 'Perubahan disimpan.');
     }

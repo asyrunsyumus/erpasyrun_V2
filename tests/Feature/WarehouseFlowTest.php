@@ -124,7 +124,7 @@ class WarehouseFlowTest extends TestCase
         $this->assertContains('selesai', $notes);
     }
 
-    public function test_unchecking_works_and_owner_cannot_finish()
+    public function test_checked_packing_cannot_be_unchecked_and_owner_cannot_finish()
     {
         $o = $this->inTransit();
         foreach (DB::table('inbound_lines')->pluck('id') as $id) {
@@ -132,8 +132,8 @@ class WarehouseFlowTest extends TestCase
         }
         $item = DB::table('order_items')->where('order_id', $o->id)->value('id');
         $this->actingAs($this->gudang)->post("/warehouse/items/{$item}/check", ['checked' => true]);
-        $this->actingAs($this->gudang)->post("/warehouse/items/{$item}/check", ['checked' => false]);
-        $this->assertSame(0, DB::table('packing_checks')->count());
+        $this->actingAs($this->gudang)->post("/warehouse/items/{$item}/check", ['checked' => false])->assertSessionHasErrors('line');
+        $this->assertSame(1, DB::table('packing_checks')->count());
         $this->actingAs($this->owner)->post("/warehouse/orders/{$o->id}/finish")->assertForbidden();
     }
 

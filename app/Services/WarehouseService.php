@@ -95,11 +95,11 @@ class WarehouseService
         $status = DB::table('orders')->where('id', $orderId)->value('status');
         abort_unless($status === OrderStatus::SiapPacking->value, 409, 'Pesanan ini tidak sedang dipacking.');
 
-        if ($checked) {
-            DB::table('packing_checks')->insertOrIgnore(['order_item_id' => $itemId, 'checked_by' => $user->id, 'checked_at' => now()]);
-        } else {
-            DB::table('packing_checks')->where('order_item_id', $itemId)->delete();
+        // Centang gudang permanen: sekali dicentang tidak bisa dibatalkan (sesuai kebutuhan audit gudang).
+        if (! $checked) {
+            throw ValidationException::withMessages(['line' => 'Centang gudang tidak bisa dibatalkan.']);
         }
+        DB::table('packing_checks')->insertOrIgnore(['order_item_id' => $itemId, 'checked_by' => $user->id, 'checked_at' => now()]);
     }
 
     public function finish(int $orderId, User $user): void
@@ -119,6 +119,7 @@ class WarehouseService
             }
             $order->update(['status' => OrderStatus::Selesai, 'status_changed_at' => now()]);
             $this->orders->history($order, OrderStatus::SiapPacking, OrderStatus::Selesai, $user, 'Packing selesai & diserahkan ke ekspedisi');
+            Audit::log('warehouse.finish', $order, null, ['number' => $order->number]);
         });
     }
 

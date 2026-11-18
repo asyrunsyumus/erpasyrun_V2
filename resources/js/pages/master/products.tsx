@@ -12,6 +12,7 @@ interface Product {
     title_latin: string;
     author: string | null;
     publisher: string | null;
+    pentahqiq: string | null;
     category_id: number | null;
     category: string | null;
     weight_grams: number | null;
@@ -43,6 +44,7 @@ type Form = {
     title_latin: string;
     author: string;
     publisher: string;
+    pentahqiq: string;
     category: string;
     weight_grams: number | '';
     primary_maktabah_id: number | '';
@@ -116,7 +118,7 @@ export default function Products({ items, filters, isOwner, categories, maktabah
     const [deleting, setDeleting] = useState<Product | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
 
-    const blank: Form = { title_ar: '', title_latin: '', author: '', publisher: '', category: '', weight_grams: '', primary_maktabah_id: '', alt_maktabah_ids: [], is_active: true, price_egp: '', price_regular: '', price_reseller: '', photo: null };
+    const blank: Form = { title_ar: '', title_latin: '', author: '', publisher: '', pentahqiq: '', category: '', weight_grams: '', primary_maktabah_id: '', alt_maktabah_ids: [], is_active: true, price_egp: '', price_regular: '', price_reseller: '', photo: null };
     const form = useForm<Form>(blank);
     const [egpText, setEgpText] = useState('');
 
@@ -132,6 +134,7 @@ export default function Products({ items, filters, isOwner, categories, maktabah
                 title_latin: p.title_latin,
                 author: p.author ?? '',
                 publisher: p.publisher ?? '',
+                pentahqiq: p.pentahqiq ?? '',
                 category: p.category ?? '',
                 weight_grams: p.weight_grams ?? '',
                 primary_maktabah_id: p.primary_maktabah_id ?? '',
@@ -275,6 +278,9 @@ export default function Products({ items, filters, isOwner, categories, maktabah
                         </Field>
                         <Field label="Penerbit" error={form.errors.publisher}>
                             <input className={inputCls} value={form.data.publisher} onChange={(e) => form.setData('publisher', e.target.value)} />
+                        </Field>
+                        <Field label="Pentahqiq" error={form.errors.pentahqiq} hint="Nama muhaqqiq (penyunting) kitab, bila ada.">
+                            <input className={inputCls} value={form.data.pentahqiq} onChange={(e) => form.setData('pentahqiq', e.target.value)} />
                         </Field>
                         <Field label="Kategori" error={form.errors.category} hint="Ketik baru atau pilih yang sudah ada.">
                             <input className={inputCls} list="cat-list" value={form.data.category} onChange={(e) => form.setData('category', e.target.value)} />

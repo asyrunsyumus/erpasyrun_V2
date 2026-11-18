@@ -25,6 +25,7 @@ class SecurityHeaders
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob:",
             "connect-src 'self'{$dev}",
+            "frame-src https://www.google.com",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",

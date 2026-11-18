@@ -30,6 +30,7 @@ class Navigation
             'purchases' => ['group' => 'Barang', 'label' => 'Belanja Mesir', 'icon' => 'bag', 'path' => '/purchases', 'roles' => [Role::Owner, Role::Mesir]],
             'baggage' => ['group' => 'Barang', 'label' => 'Jadwal Bagasi', 'icon' => 'plane', 'path' => '/baggage', 'roles' => [Role::Owner]],
             'warehouse' => ['group' => 'Barang', 'label' => 'Gudang & Packing', 'icon' => 'box', 'path' => '/warehouse', 'roles' => [Role::Gudang]],
+            'warehouse_progress' => ['group' => 'Barang', 'label' => 'Progres Gudang', 'icon' => 'layers', 'path' => '/warehouse-progress', 'roles' => [Role::Owner]],
             'stock' => ['group' => 'Barang', 'label' => 'Stok Ready', 'icon' => 'layers', 'path' => '/stock', 'roles' => [Role::Owner, Role::Admin, Role::Gudang]],
 
             'reports' => ['group' => 'Keuangan', 'label' => 'Laporan', 'icon' => 'chart', 'path' => '/reports', 'roles' => [Role::Owner]],

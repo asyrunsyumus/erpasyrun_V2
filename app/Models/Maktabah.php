@@ -10,7 +10,7 @@ class Maktabah extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'area', 'phone', 'notes'];
+    protected $fillable = ['name', 'area', 'phone', 'notes', 'gmaps_url'];
 
     public function products(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

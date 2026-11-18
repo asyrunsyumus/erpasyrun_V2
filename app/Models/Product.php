@@ -14,7 +14,7 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     /** Kolom yang boleh diubah Admin. Harga hanya lewat PRICE_FIELDS (khusus Owner). */
-    public const INFO_FIELDS = ['title_ar', 'title_latin', 'author', 'publisher', 'category_id', 'weight_grams', 'primary_maktabah_id', 'is_active'];
+    public const INFO_FIELDS = ['title_ar', 'title_latin', 'author', 'publisher', 'pentahqiq', 'category_id', 'weight_grams', 'primary_maktabah_id', 'is_active'];
 
     public const PRICE_FIELDS = ['price_egp', 'price_regular', 'price_reseller'];
 
