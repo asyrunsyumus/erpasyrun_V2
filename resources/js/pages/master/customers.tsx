@@ -1,4 +1,5 @@
 import { applyFilters, Btn, ConfirmDelete, EmptyState, ErrorBanner, Field, inputCls, Modal, PageHeader, Pager, type Paginated, SearchBox, Segmented, Table } from '@/components/erp';
+import { TelButton, WaButton } from '@/components/contact';
 import ErpLayout from '@/layouts/erp-layout';
 import { parseAddress } from '@/lib/address';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -139,7 +140,13 @@ export default function Customers({ items, filters, canDelete }: { items: Pagina
                                 {c.type === 'reseller' ? 'Reseller' : 'Reguler'}
                             </span>
                         </td>
-                        <td className="text-ink-2">{c.phone || '—'}</td>
+                        <td>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-ink-2 mr-1 num">{c.phone || '—'}</span>
+                                <WaButton phone={c.phone} />
+                                <TelButton phone={c.phone} />
+                            </div>
+                        </td>
                         <td className="text-ink-2">{wilayah(c) || '—'}</td>
                         <td className="text-right whitespace-nowrap">
                             <Btn size="sm" variant="ghost" onClick={() => open(c)} aria-label="Ubah">
@@ -176,8 +183,12 @@ export default function Customers({ items, filters, canDelete }: { items: Pagina
                         </div>
                     </Field>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Telepon / WhatsApp" error={form.errors.phone}>
-                            <input className={inputCls} inputMode="tel" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} />
+                        <Field label="Telepon / WhatsApp" error={form.errors.phone} hint="Nomor 08… otomatis dianggap Indonesia (62).">
+                            <div className="flex items-center gap-2">
+                                <input className={inputCls + ' flex-1'} inputMode="tel" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} />
+                                <WaButton phone={form.data.phone} />
+                                <TelButton phone={form.data.phone} />
+                            </div>
                         </Field>
                         <Field label="Kota" error={form.errors.city}>
                             <input className={inputCls} value={form.data.city} onChange={(e) => form.setData('city', e.target.value)} />

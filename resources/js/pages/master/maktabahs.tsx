@@ -1,4 +1,5 @@
 import { applyFilters, Btn, ConfirmDelete, EmptyState, ErrorBanner, Field, inputCls, Modal, PageHeader, Pager, type Paginated, SearchBox, Table } from '@/components/erp';
+import { TelButton, WaButton } from '@/components/contact';
 import ErpLayout from '@/layouts/erp-layout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Pencil, Plus, Search, Trash2, Upload } from 'lucide-react';
@@ -9,13 +10,14 @@ interface Maktabah {
     name: string;
     area: string | null;
     phone: string | null;
+    whatsapp: string | null;
     notes: string | null;
     gmaps_url: string | null;
     products_count: number;
 }
 
-type Form = { name: string; area: string; phone: string; notes: string; gmaps_url: string };
-const blank: Form = { name: '', area: '', phone: '', notes: '', gmaps_url: '' };
+type Form = { name: string; area: string; phone: string; whatsapp: string; notes: string; gmaps_url: string };
+const blank: Form = { name: '', area: '', phone: '', whatsapp: '', notes: '', gmaps_url: '' };
 
 /** Ikon pin peta (SVG), dipakai untuk tombol buka link Google Maps. */
 export function GmapsIcon({ className = 'size-4' }: { className?: string }) {
@@ -46,7 +48,7 @@ export default function Maktabahs({ items, filters, canEdit }: { items: Paginate
 
     const open = (m: Maktabah | 'new') => {
         form.clearErrors();
-        form.setData(m === 'new' ? blank : { name: m.name, area: m.area ?? '', phone: m.phone ?? '', notes: m.notes ?? '', gmaps_url: m.gmaps_url ?? '' });
+        form.setData(m === 'new' ? blank : { name: m.name, area: m.area ?? '', phone: m.phone ?? '', whatsapp: m.whatsapp ?? '', notes: m.notes ?? '', gmaps_url: m.gmaps_url ?? '' });
         setEditing(m);
     };
     const submit = (e: React.FormEvent) => {
@@ -87,7 +89,7 @@ export default function Maktabahs({ items, filters, canEdit }: { items: Paginate
                     <>
                         <th>Nama</th>
                         <th>Area</th>
-                        <th>Telepon</th>
+                        <th>Kontak</th>
                         <th className="text-right">Kitab utama</th>
                         <th className="w-24" />
                     </>
@@ -101,7 +103,13 @@ export default function Maktabahs({ items, filters, canEdit }: { items: Paginate
                             {m.notes && <small className="text-ink-3 block text-[13px]">{m.notes}</small>}
                         </td>
                         <td className="text-ink-2">{m.area || '—'}</td>
-                        <td className="text-ink-2">{m.phone || '—'}</td>
+                        <td>
+                            <div className="flex items-center gap-1.5">
+                                <WaButton phone={m.whatsapp} country="20" label="Chat WhatsApp" />
+                                <TelButton phone={m.phone} label="Telepon" />
+                                {!m.whatsapp && !m.phone && <span className="text-ink-3 text-[13px]">—</span>}
+                            </div>
+                        </td>
                         <td className="text-right">{m.products_count}</td>
                         <td className="text-right whitespace-nowrap">
                             {m.gmaps_url && <MapsButton url={m.gmaps_url} />}
@@ -130,8 +138,17 @@ export default function Maktabahs({ items, filters, canEdit }: { items: Paginate
                         <Field label="Area" error={form.errors.area}>
                             <input className={inputCls} value={form.data.area} onChange={(e) => form.setData('area', e.target.value)} placeholder="mis. Al-Azhar" />
                         </Field>
+                        <Field label="WhatsApp" error={form.errors.whatsapp} hint="Tulis dengan kode negara, mis. +20 1xx xxxx xxxx untuk Mesir.">
+                            <div className="flex items-center gap-2">
+                                <input className={inputCls + ' flex-1'} inputMode="tel" placeholder="+20…" value={form.data.whatsapp} onChange={(e) => form.setData('whatsapp', e.target.value)} />
+                                <WaButton phone={form.data.whatsapp} country="20" />
+                            </div>
+                        </Field>
                         <Field label="Telepon" error={form.errors.phone}>
-                            <input className={inputCls} value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} />
+                            <div className="flex items-center gap-2">
+                                <input className={inputCls + ' flex-1'} inputMode="tel" placeholder="+20…" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} />
+                                <TelButton phone={form.data.phone} />
+                            </div>
                         </Field>
                         <Field label="Catatan" error={form.errors.notes}>
                             <input className={inputCls} value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} />

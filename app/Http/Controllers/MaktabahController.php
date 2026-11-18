@@ -35,6 +35,7 @@ class MaktabahController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'area' => ['nullable', 'string', 'max:120'],
             'phone' => ['nullable', 'string', 'max:40'],
+            'whatsapp' => ['nullable', 'string', 'max:40'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'gmaps_url' => ['nullable', 'url', 'max:500', 'regex:#^https?://#i'],
         ];

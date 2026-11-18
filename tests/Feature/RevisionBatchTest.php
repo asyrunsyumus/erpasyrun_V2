@@ -84,6 +84,14 @@ class RevisionBatchTest extends TestCase
         $this->assertNull($m->refresh()->gmaps_url);
     }
 
+    public function test_maktabah_whatsapp_and_phone_are_separate()
+    {
+        $this->actingAs($this->owner)->post('/maktabahs', [
+            'name' => 'Dar Ibn Hazm', 'phone' => '+20 2 2345 6789', 'whatsapp' => '+20 100 123 4567',
+        ])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('maktabahs', ['name' => 'Dar Ibn Hazm', 'phone' => '+20 2 2345 6789', 'whatsapp' => '+20 100 123 4567']);
+    }
+
     public function test_customer_address_fields_are_saved()
     {
         $this->actingAs($this->admin)->post('/customers', [
