@@ -66,18 +66,6 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
 
             <nav className="flex flex-col gap-0.5">
-                <Link
-                    href="/notifications"
-                    onClick={onNavigate}
-                    className={
-                        'flex items-center gap-3 rounded-[10px] px-3 py-2.5 font-medium transition-colors ' +
-                        (current === '/notifications' ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-soft hover:text-ink')
-                    }
-                >
-                    <Bell className="size-5 shrink-0" strokeWidth={1.7} />
-                    Notifikasi
-                    {unread > 0 && <span className="bg-bad ml-auto rounded-full px-2 py-px text-xs font-semibold text-white">{unread}</span>}
-                </Link>
                 {groups.map((g) => (
                     <div key={g.name || 'root'} className="flex flex-col gap-0.5">
                         {g.name && <div className="text-ink-3 px-2.5 pt-4 pb-1.5 text-xs font-medium">{g.name}</div>}
@@ -137,6 +125,16 @@ function MobileBell() {
     );
 }
 
+function DesktopBell() {
+    const { unread } = usePage<SharedData>().props;
+    return (
+        <Link href="/notifications" className="bg-surface border-line hover:border-ink-3 relative grid size-10 place-items-center rounded-full border" aria-label="Notifikasi">
+            <Bell className="size-[18px]" />
+            {unread > 0 && <span className="bg-bad absolute -top-1 -right-1 rounded-full px-1.5 text-[11px] font-semibold text-white">{unread}</span>}
+        </Link>
+    );
+}
+
 export default function ErpLayout({ children }: { children: ReactNode }) {
     const [open, setOpen] = useState(false);
     const { flash } = usePage<SharedData>().props;
@@ -169,6 +167,10 @@ export default function ErpLayout({ children }: { children: ReactNode }) {
             )}
 
             <main className="erp-enter min-w-0 px-4 pt-5 pb-12 lg:max-w-[1280px] lg:px-8 lg:pt-7">
+                {/* Desktop: lonceng notifikasi di kanan atas (menggantikan item di sidebar). */}
+                <div className="mb-3 hidden justify-end lg:flex">
+                    <DesktopBell />
+                </div>
                 {flash?.success && (
                     <div className="bg-ok-soft text-ok mb-4 rounded-xl px-4 py-3 text-sm font-medium" role="status">
                         {flash.success}
