@@ -4,7 +4,7 @@ import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { CircleX, Clock, ClipboardCheck, FileText, Package, PackageCheck, PackageOpen, Plane, Plus, ShoppingBag, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
-import { BarChart, CountUp } from '@/components/motion';
+import { BarChart, CountUp, GrowBar } from '@/components/motion';
 
 interface Task {
     count: number;
@@ -254,10 +254,11 @@ export default function Dashboard(props: Props) {
                                 {props.baggage.quota_grams ? (
                                     <>
                                         <div className="bg-soft mt-3 mb-1 h-2.5 overflow-hidden rounded-md">
-                                            <i className="bg-brand block h-full rounded-md" style={{ width: `${Math.min(100, (props.baggage.used_grams / props.baggage.quota_grams) * 100)}%` }} />
+                                            <GrowBar pct={(props.baggage.used_grams / props.baggage.quota_grams) * 100} />
                                         </div>
                                         <p className="text-ink-3 num text-[13.5px]">
-                                            {kg(props.baggage.used_grams)} terpakai dari {kg(props.baggage.quota_grams)} · sisa {kg(Math.max(0, props.baggage.quota_grams - props.baggage.used_grams))}
+                                            <CountUp value={props.baggage.used_grams / 1000} format={(n) => kg(Math.round(n * 1000))} /> terpakai dari {kg(props.baggage.quota_grams)} · sisa{' '}
+                                            <CountUp value={Math.max(0, props.baggage.quota_grams - props.baggage.used_grams) / 1000} format={(n) => kg(Math.round(n * 1000))} />
                                         </p>
                                     </>
                                 ) : (
@@ -265,7 +266,7 @@ export default function Dashboard(props: Props) {
                                 )}
                                 <div className="text-ink-2 num mt-2.5 flex justify-between py-2">
                                     <span>Pesanan ikut</span>
-                                    <b className="text-ink font-medium">{props.baggage.orders} pesanan</b>
+                                    <b className="text-ink font-medium"><CountUp value={props.baggage.orders} format={(n) => `${Math.round(n)} pesanan`} /></b>
                                 </div>
                             </>
                         ) : (

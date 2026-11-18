@@ -177,6 +177,23 @@ export function BarChart({
 }
 
 /** Angka yang ikut naik dari nilai sebelumnya. */
+/** Batang progres yang tumbuh dari 0 ke persentase tujuan (ikut "kurangi gerakan" bila aktif). */
+export function GrowBar({ pct, className = '' }: { pct: number; className?: string }) {
+    const reduced = useReducedMotion();
+    const target = clamp(pct, 0, 100);
+    const [w, setW] = useState(reduced ? target : 0);
+    useEffect(() => {
+        if (reduced) {
+            setW(target);
+            return;
+        }
+        const id = requestAnimationFrame(() => setW(target));
+        return () => cancelAnimationFrame(id);
+    }, [target, reduced]);
+
+    return <i className={`bg-brand block h-full rounded-md transition-[width] duration-700 ease-out ${className}`} style={{ width: `${w}%` }} />;
+}
+
 export function CountUp({ value, format = (n: number) => String(Math.round(n)), duration = 650 }: { value: number; format?: (n: number) => string; duration?: number }) {
     const reduced = useReducedMotion();
     const [shown, setShown] = useState(reduced ? value : 0);
