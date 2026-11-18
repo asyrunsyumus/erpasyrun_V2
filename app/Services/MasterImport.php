@@ -25,9 +25,9 @@ class MasterImport
 
     /** Kolom template per jenis. Kolom bertanda * wajib. */
     public const COLUMNS = [
-        'products' => ['sku', 'judul_latin*', 'judul_arab', 'penulis', 'penerbit', 'kategori', 'berat_gram', 'maktabah_utama', 'harga_egp', 'harga_reguler', 'harga_reseller', 'stok_awal'],
-        'customers' => ['kode', 'nama*', 'telepon', 'alamat', 'kota', 'tipe'],
-        'maktabahs' => ['nama*', 'area', 'telepon', 'catatan'],
+        'products' => ['sku', 'judul_latin*', 'judul_arab', 'penulis', 'penerbit', 'pentahqiq', 'kategori', 'berat_gram', 'maktabah_utama', 'harga_egp', 'harga_reguler', 'harga_reseller', 'stok_awal'],
+        'customers' => ['kode', 'nama*', 'telepon', 'alamat', 'kota', 'kelurahan', 'kecamatan', 'kode_pos', 'tipe'],
+        'maktabahs' => ['nama*', 'area', 'telepon', 'whatsapp', 'link_gmaps', 'catatan'],
     ];
 
     /** Kolom yang hanya diproses bila pengimpor adalah Owner. */
@@ -119,6 +119,7 @@ class MasterImport
             'title_ar' => $r['judul_arab'] ?? '',
             'author' => $r['penulis'] ?? '',
             'publisher' => $r['penerbit'] ?? '',
+            'pentahqiq' => $r['pentahqiq'] ?? '',
             'category' => $r['kategori'] ?? '',
             'weight_grams' => self::int($r['berat_gram'] ?? null),
             'maktabah' => $r['maktabah_utama'] ?? '',
@@ -162,12 +163,16 @@ class MasterImport
             'phone' => $r['telepon'] ?? '',
             'address' => $r['alamat'] ?? '',
             'city' => $r['kota'] ?? '',
+            'kelurahan' => $r['kelurahan'] ?? '',
+            'kecamatan' => $r['kecamatan'] ?? '',
+            'kode_pos' => $r['kode_pos'] ?? '',
             'type' => $tipe === '' ? 'reguler' : $tipe,
         ];
         $errors = Validator::make($d, [
             'name' => ['required', 'max:120'],
             'type' => ['in:reguler,reseller'],
-        ], ['name.required' => 'nama kosong', 'type.in' => 'tipe harus "reguler" atau "reseller"'])->errors()->all();
+            'kode_pos' => ['nullable', 'max:10'],
+        ], ['name.required' => 'nama kosong', 'type.in' => 'tipe harus "reguler" atau "reseller"', 'kode_pos.max' => 'kode_pos terlalu panjang'])->errors()->all();
 
         $exists = $d['code'] !== '' && Customer::where('code', $d['code'])->exists();
 
@@ -176,8 +181,18 @@ class MasterImport
 
     private function checkMaktabah(array $r): array
     {
-        $d = ['name' => $r['nama'] ?? '', 'area' => $r['area'] ?? '', 'phone' => $r['telepon'] ?? '', 'notes' => $r['catatan'] ?? ''];
-        $errors = Validator::make($d, ['name' => ['required', 'max:120']], ['name.required' => 'nama kosong'])->errors()->all();
+        $d = [
+            'name' => $r['nama'] ?? '',
+            'area' => $r['area'] ?? '',
+            'phone' => $r['telepon'] ?? '',
+            'whatsapp' => $r['whatsapp'] ?? '',
+            'gmaps_url' => $r['link_gmaps'] ?? '',
+            'notes' => $r['catatan'] ?? '',
+        ];
+        $errors = Validator::make($d, [
+            'name' => ['required', 'max:120'],
+            'gmaps_url' => ['nullable', 'url', 'max:500', 'regex:#^https?://#i'],
+        ], ['name.required' => 'nama kosong', 'gmaps_url.url' => 'link_gmaps harus berupa link (diawali https://)', 'gmaps_url.regex' => 'link_gmaps harus berupa link (diawali https://)'])->errors()->all();
         $exists = $d['name'] !== '' && Maktabah::where('name', $d['name'])->exists();
 
         return [$d, $errors, $exists ? 'perbarui' : 'baru'];
@@ -194,7 +209,10 @@ class MasterImport
                 match ($type) {
                     'products' => $this->saveProduct($d, $user),
                     'customers' => $this->saveCustomer($d),
-                    'maktabahs' => Maktabah::updateOrCreate(['name' => $d['name']], array_filter($d, fn ($v) => $v !== '')),
+                    'maktabahs' => Maktabah::updateOrCreate(['name' => $d['name']], array_filter(
+                        ['area' => $d['area'], 'phone' => $d['phone'], 'whatsapp' => $d['whatsapp'], 'gmaps_url' => $d['gmaps_url'], 'notes' => $d['notes']],
+                        fn ($v) => $v !== '',
+                    )),
                 };
             }
         });
@@ -209,6 +227,7 @@ class MasterImport
             'title_ar' => $d['title_ar'],
             'author' => $d['author'],
             'publisher' => $d['publisher'],
+            'pentahqiq' => $d['pentahqiq'],
             'weight_grams' => $d['weight_grams'],
         ], fn ($v) => $v !== '' && $v !== null);
 
@@ -244,7 +263,16 @@ class MasterImport
 
     private function saveCustomer(array $d): void
     {
-        $values = array_filter(['name' => $d['name'], 'phone' => $d['phone'], 'address' => $d['address'], 'city' => $d['city'], 'type' => $d['type']], fn ($v) => $v !== '');
+        $values = array_filter([
+            'name' => $d['name'],
+            'phone' => $d['phone'],
+            'address' => $d['address'],
+            'city' => $d['city'],
+            'kelurahan' => $d['kelurahan'],
+            'kecamatan' => $d['kecamatan'],
+            'kode_pos' => $d['kode_pos'],
+            'type' => $d['type'],
+        ], fn ($v) => $v !== '');
         $c = $d['code'] !== '' ? Customer::firstWhere('code', $d['code']) : null;
         if ($c) {
             $c->update($values);

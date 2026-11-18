@@ -92,6 +92,43 @@ class RevisionBatchTest extends TestCase
         $this->assertDatabaseHas('maktabahs', ['name' => 'Dar Ibn Hazm', 'phone' => '+20 2 2345 6789', 'whatsapp' => '+20 100 123 4567']);
     }
 
+    public function test_templates_include_new_columns_per_type()
+    {
+        $owner = $this->owner;
+        $admin = $this->admin;
+
+        $p = $this->actingAs($owner)->get('/imports/template/products')->streamedContent();
+        $this->assertStringContainsString('pentahqiq', $p);
+
+        $c = $this->actingAs($admin)->get('/imports/template/customers')->streamedContent();
+        $this->assertStringContainsString('kelurahan,kecamatan,kode_pos', $c);
+        $this->assertStringNotContainsString('harga', $this->actingAs($admin)->get('/imports/template/products')->streamedContent());
+
+        $m = $this->actingAs($owner)->get('/imports/template/maktabahs')->streamedContent();
+        $this->assertStringContainsString('whatsapp', $m);
+        $this->assertStringContainsString('link_gmaps', $m);
+    }
+
+    public function test_import_saves_new_customer_maktabah_and_product_columns()
+    {
+        $imp = app(\App\Services\MasterImport::class);
+
+        $rows = [['nama' => 'Budi', 'telepon' => '0812', 'kelurahan' => 'Denanyar', 'kecamatan' => 'Jombang', 'kode_pos' => '61419', 'tipe' => 'reguler']];
+        $imp->apply('customers', $imp->preview('customers', $rows, $this->owner)['rows'], $this->owner);
+        $this->assertDatabaseHas('customers', ['name' => 'Budi', 'kelurahan' => 'Denanyar', 'kecamatan' => 'Jombang', 'kode_pos' => '61419']);
+
+        $rows = [['nama' => 'Dar Ibn Hazm', 'telepon' => '+20 2 2345', 'whatsapp' => '+20 100 123', 'link_gmaps' => 'https://maps.app.goo.gl/x']];
+        $imp->apply('maktabahs', $imp->preview('maktabahs', $rows, $this->owner)['rows'], $this->owner);
+        $this->assertDatabaseHas('maktabahs', ['name' => 'Dar Ibn Hazm', 'whatsapp' => '+20 100 123', 'gmaps_url' => 'https://maps.app.goo.gl/x']);
+
+        $rows = [['judul_latin' => 'Riyadhus Shalihin', 'pentahqiq' => 'Syaikh Fulan']];
+        $imp->apply('products', $imp->preview('products', $rows, $this->owner)['rows'], $this->owner);
+        $this->assertDatabaseHas('products', ['title_latin' => 'Riyadhus Shalihin', 'pentahqiq' => 'Syaikh Fulan']);
+
+        $bad = $imp->preview('maktabahs', [['nama' => 'X', 'link_gmaps' => 'bukan-link']], $this->owner)['rows'];
+        $this->assertNotEmpty($bad[0]['errors']);
+    }
+
     public function test_customer_address_fields_are_saved()
     {
         $this->actingAs($this->admin)->post('/customers', [

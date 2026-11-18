@@ -35,12 +35,13 @@ class ImportController extends Controller
         if (! $request->user()->isOwner()) {
             $cols = array_values(array_filter($cols, fn ($c) => ! str_starts_with($c, 'harga') && $c !== 'stok_awal'));
         }
-        $example = [
-            'products' => ['', 'Fathul Qarib', 'فتح القريب المجيب', 'Ibnu Qasim', 'Dar Ibn Hazm', 'Fiqih', '420', 'Dar al-Salam', '85', '150000', '135000', '0'],
-            'customers' => ['', 'Ahmad Fauzi', '081234567890', 'Jl. KH. Hasyim Asyari 12', 'Jombang', 'reseller'],
-            'maktabahs' => ['Dar al-Salam', 'Al-Azhar', '+20 10 0000 0000', ''],
+        // Contoh isi per nama kolom (tanpa tanda *), agar tetap benar walau urutan kolom berubah.
+        $samples = [
+            'products' => ['sku' => '', 'judul_latin' => 'Fathul Qarib', 'judul_arab' => 'فتح القريب المجيب', 'penulis' => 'Ibnu Qasim', 'penerbit' => 'Dar Ibn Hazm', 'pentahqiq' => 'Syaikh Fulan', 'kategori' => 'Fiqih', 'berat_gram' => '420', 'maktabah_utama' => 'Dar al-Salam', 'harga_egp' => '85', 'harga_reguler' => '150000', 'harga_reseller' => '135000', 'stok_awal' => '0'],
+            'customers' => ['kode' => '', 'nama' => 'Ahmad Fauzi', 'telepon' => '081234567890', 'alamat' => 'Jl. KH. Hasyim Asyari 12', 'kota' => 'Jombang', 'kelurahan' => 'Denanyar', 'kecamatan' => 'Jombang', 'kode_pos' => '61419', 'tipe' => 'reseller'],
+            'maktabahs' => ['nama' => 'Dar al-Salam', 'area' => 'Al-Azhar', 'telepon' => '+20 2 2345 6789', 'whatsapp' => '+20 10 0000 0000', 'link_gmaps' => 'https://maps.app.goo.gl/contoh', 'catatan' => ''],
         ][$type];
-        $example = array_slice($example, 0, count($cols));
+        $example = array_map(fn ($c) => $samples[rtrim($c, '*')] ?? '', $cols);
 
         return response()->streamDownload(function () use ($cols, $example) {
             $out = fopen('php://output', 'w');

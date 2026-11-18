@@ -105,6 +105,16 @@ export default function ImportPage({ types, selected, isOwner }: { types: TypeOp
                         </ul>
                     )}
                     {form.data.type === 'customers' && <p className="text-ink-2">Kolom tipe diisi "reguler" atau "reseller". Kosong = reguler.</p>}
+                    {form.data.type === 'maktabahs' && (
+                        <ul className="text-ink-2 list-disc space-y-1 pl-4">
+                            <li>
+                                <code>telepon</code> dan <code>whatsapp</code> sebaiknya memakai kode negara, mis. <code>+20</code> untuk Mesir.
+                            </li>
+                            <li>
+                                <code>link_gmaps</code> harus berupa link lengkap (diawali https://). Kosongkan bila belum ada.
+                            </li>
+                        </ul>
+                    )}
                     <a href={`/imports/template/${form.data.type}`} className="text-brand mt-1 inline-flex items-center gap-1.5 font-medium">
                         <Download className="size-4" /> Unduh template
                     </a>
