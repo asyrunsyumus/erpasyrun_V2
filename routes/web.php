@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BackupController;
