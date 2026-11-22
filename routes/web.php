@@ -32,10 +32,6 @@ Route::redirect('/', '/dashboard')->name('home');
 Route::post('_deploy', DeployController::class)
     ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\EnsureAccountUsable::class, \App\Http\Middleware\HandleInertiaRequests::class]);
 
-// SEMENTARA: pembersihan data uji coba (sekali pakai). Hapus route ini setelah dipakai.
-Route::post('_reset', \App\Http\Controllers\ResetDataController::class)
-    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \App\Http\Middleware\EnsureAccountUsable::class, \App\Http\Middleware\HandleInertiaRequests::class]);
-
 // Setup akun Owner pertama (sekali pakai, bertoken).
 Route::middleware(['guest', 'throttle:10,1'])->group(function () {
     Route::get('setup/{token}', [SetupController::class, 'show'])->name('setup.show');
